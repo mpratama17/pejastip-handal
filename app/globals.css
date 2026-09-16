@@ -1,0 +1,91 @@
+@import "tailwindcss";
+
+/*
+ * Token warna & tipografi — sumber: docs/04-design-system.md §2.
+ * Layer brand (primary/cover/accent) adalah yang diganti saat white-label;
+ * layer semantik (success/warning/danger/info) TIDAK ikut berganti.
+ */
+:root {
+  /* Brand */
+  --color-primary: #2f6355;
+  --color-primary-hover: #244f44;
+  --color-primary-soft: #dce8e2;
+  --color-cover: #1f4038;
+  --color-cover-deep: #152e27;
+  --color-accent: #a8442f;
+  --color-accent-soft: #f2dbd2;
+
+  /* Permukaan */
+  --color-bg: #f1ecdd;
+  --color-surface: #ffffff;
+  --color-surface-sunken: #e8e1cc;
+
+  /* Teks */
+  --color-ink: #2b221a;
+  --color-ink-muted: #6b6257;
+  --color-ink-faint: #9c9285;
+
+  /* Garis */
+  --color-border: #dcd4c0;
+  --color-border-strong: #c4baa0;
+
+  /* Semantik — tidak ikut berganti saat white-label */
+  --color-success: #15803d;
+  --color-success-soft: #dcfce7;
+  --color-warning: #b45309;
+  --color-warning-soft: #fef3c7;
+  --color-danger: #b91c1c;
+  --color-danger-soft: #fee2e2;
+  --color-info: #1d4ed8;
+  --color-info-soft: #dbeafe;
+
+  /* Radius — docs/04 §2.5 */
+  --radius-sm: 8px;
+  --radius-md: 12px;
+  --radius-lg: 16px;
+}
+
+@theme inline {
+  --color-primary: var(--color-primary);
+  --color-primary-hover: var(--color-primary-hover);
+  --color-primary-soft: var(--color-primary-soft);
+  --color-cover: var(--color-cover);
+  --color-cover-deep: var(--color-cover-deep);
+  --color-accent: var(--color-accent);
+  --color-accent-soft: var(--color-accent-soft);
+
+  --color-bg: var(--color-bg);
+  --color-surface: var(--color-surface);
+  --color-surface-sunken: var(--color-surface-sunken);
+
+  --color-ink: var(--color-ink);
+  --color-ink-muted: var(--color-ink-muted);
+  --color-ink-faint: var(--color-ink-faint);
+
+  --color-border: var(--color-border);
+  --color-border-strong: var(--color-border-strong);
+
+  --color-success: var(--color-success);
+  --color-success-soft: var(--color-success-soft);
+  --color-warning: var(--color-warning);
+  --color-warning-soft: var(--color-warning-soft);
+  --color-danger: var(--color-danger);
+  --color-danger-soft: var(--color-danger-soft);
+  --color-info: var(--color-info);
+  --color-info-soft: var(--color-info-soft);
+
+  --radius-sm: var(--radius-sm);
+  --radius-md: var(--radius-md);
+  --radius-lg: var(--radius-lg);
+
+  --font-display: var(--font-fraunces);
+  --font-sans: var(--font-inter);
+}
+
+/* MVP light mode saja (docs/04 §1) — dark mode belum dibangun. */
+
+body {
+  background: var(--color-bg);
+  color: var(--color-ink);
+  font-family: var(--font-sans), system-ui, sans-serif;
+}
