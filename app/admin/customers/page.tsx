@@ -54,7 +54,7 @@ function Customers() {
 
   return (
     <div>
-      <h1 className="font-display text-xl font-semibold text-ink">Customer</h1>
+      <h1 className="font-display text-xl font-bold text-ink">Customer</h1>
 
       <div className="mt-4 grid gap-6 xl:grid-cols-[1fr_28rem]">
         <div className="min-w-0">
@@ -74,7 +74,7 @@ function Customers() {
 
           <div className="mt-4 overflow-x-auto rounded-lg border border-border">
             <table className="w-full text-sm">
-              <thead className="bg-surface-sunken text-left text-ink-muted">
+              <thead className="border-b border-ink bg-surface-sunken text-left">
                 <tr>
                   <th className="px-4 py-2 font-medium">Nama</th>
                   <th className="px-4 py-2 font-medium">Kode</th>
@@ -193,7 +193,7 @@ function CustomerDetail({ customer: c, onChanged }: { customer: Customer; onChan
 
   return (
     <aside className="h-fit rounded-lg border border-border bg-surface p-5 xl:sticky xl:top-6">
-      <p className="font-display text-xl font-semibold">{c.full_name}</p>
+      <p className="font-display text-xl font-bold">{c.full_name}</p>
       <p className="text-sm text-ink-muted">
         <span className="tabular-nums">{c.code}</span> · {c.whatsapp}
         {c.instagram ? ` · ${c.instagram}` : ""}

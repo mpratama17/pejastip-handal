@@ -128,7 +128,7 @@ export default function AdminBooksPage() {
 
   return (
     <div>
-      <h1 className="font-display text-xl font-semibold text-ink">Katalog</h1>
+      <h1 className="font-display text-xl font-bold text-ink">Katalog</h1>
 
       <div className="mt-4 max-w-xs">
         <label className="block text-sm font-medium text-ink">Event</label>
@@ -173,7 +173,7 @@ export default function AdminBooksPage() {
             {importResults.length > 0 && (
               <div className="mt-4 overflow-x-auto rounded-md border border-border">
                 <table className="w-full text-xs">
-                  <thead className="bg-surface-sunken text-left text-ink-muted">
+                  <thead className="border-b border-ink bg-surface-sunken text-left">
                     <tr>
                       <th className="px-3 py-1.5">Baris</th>
                       <th className="px-3 py-1.5">Status</th>
@@ -261,7 +261,7 @@ export default function AdminBooksPage() {
 
           <div className="mt-6 overflow-x-auto rounded-lg border border-border">
             <table className="w-full text-sm">
-              <thead className="bg-surface-sunken text-left text-ink-muted">
+              <thead className="border-b border-ink bg-surface-sunken text-left">
                 <tr>
                   <th className="px-4 py-2 font-medium">Sampul</th>
                   <th className="px-4 py-2 font-medium">Judul</th>

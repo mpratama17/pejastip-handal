@@ -53,14 +53,14 @@ export default function AdminPaymentsPage() {
 
   return (
     <div>
-      <h1 className="font-display text-xl font-semibold text-ink">Verifikasi pembayaran</h1>
+      <h1 className="font-display text-xl font-bold text-ink">Verifikasi pembayaran</h1>
 
       <div className="mt-4 flex gap-1 rounded-md bg-surface-sunken p-1 text-sm sm:inline-flex">
         {(["pending", "reviewed"] as const).map((f) => (
           <button
             key={f}
             onClick={() => setFilter(f)}
-            className={`flex-1 whitespace-nowrap rounded-sm px-4 py-1.5 font-medium ${filter === f ? "bg-surface text-ink shadow-sm" : "text-ink-muted"}`}
+            className={`flex-1 whitespace-nowrap rounded-full px-4 py-1.5 font-semibold ${filter === f ? "border border-ink bg-primary text-ink" : "border border-transparent text-ink-muted hover:text-ink"}`}
           >
             {f === "pending" ? "Menunggu" : "Riwayat"}
           </button>
@@ -161,7 +161,7 @@ function PaymentCard({
       <div className="flex min-w-0 flex-col">
         <div className="flex flex-wrap items-start justify-between gap-2">
           <div>
-            <Link href={`/admin/orders/detail?id=${order?.id}`} className="font-display text-lg font-semibold text-link hover:underline">
+            <Link href={`/admin/orders/detail?id=${order?.id}`} className="font-display text-lg font-bold text-link hover:underline">
               {order?.order_code}
             </Link>
             <p className="text-sm text-ink-muted">

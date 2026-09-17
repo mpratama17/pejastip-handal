@@ -121,7 +121,7 @@ function OrderDetail() {
     <div>
       <div className="flex flex-wrap items-start justify-between gap-3">
         <div>
-          <h1 className="font-display text-xl font-semibold text-ink">{order.order_code}</h1>
+          <h1 className="font-display text-xl font-bold text-ink">{order.order_code}</h1>
           <p className="mt-1 text-sm text-ink-muted">
             {order.customers?.full_name} ({order.customers?.code}) · {order.events?.name}
           </p>
@@ -172,7 +172,7 @@ function OrderDetail() {
         <h2 className="text-sm font-semibold text-ink">Pembayaran</h2>
         <div className="mt-2 overflow-x-auto rounded-lg border border-border">
           <table className="w-full text-sm">
-            <thead className="bg-surface-sunken text-left text-ink-muted">
+            <thead className="border-b border-ink bg-surface-sunken text-left">
               <tr>
                 <th className="px-4 py-2 font-medium">Tanggal</th>
                 <th className="px-4 py-2 text-right font-medium">Nominal</th>
@@ -252,7 +252,7 @@ function SummaryCard({ label, value, accent }: { label: string; value: string; a
   return (
     <div className="rounded-lg border border-border bg-surface p-4">
       <p className="text-xs font-medium text-ink-muted">{label}</p>
-      <p className={`mt-1 font-display text-xl font-semibold tabular-nums ${accent ? "text-accent-ink" : "text-ink"}`}>
+      <p className={`mt-1 font-display text-xl font-bold tabular-nums ${accent ? "text-accent-ink" : "text-ink"}`}>
         {value}
       </p>
     </div>
@@ -333,7 +333,7 @@ function ItemsSection({ order, items, onChanged }: { order: OrderRow; items: Ord
       {!editing ? (
         <div className="mt-2 overflow-x-auto rounded-lg border border-border">
           <table className="w-full text-sm">
-            <thead className="bg-surface-sunken text-left text-ink-muted">
+            <thead className="border-b border-ink bg-surface-sunken text-left">
               <tr>
                 <th className="px-4 py-2 font-medium">Judul</th>
                 <th className="px-4 py-2 text-right font-medium">Qty</th>
