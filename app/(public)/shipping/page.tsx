@@ -20,7 +20,7 @@ const PROVINCES = [
 ];
 
 const INPUT =
-  "mt-1 w-full rounded-md border border-border bg-surface px-3 py-2.5 text-sm text-ink focus:border-primary focus:outline-none focus:ring-2 focus:ring-primary/30";
+  "mt-1 w-full rounded-md border border-border bg-surface px-3 py-2.5 text-sm text-ink";
 
 export default function ShippingPage() {
   return (
@@ -107,10 +107,10 @@ function ShippingForm() {
   if (done) {
     return (
       <div className="mx-auto max-w-2xl px-4 py-10">
-        <div className="rounded-lg bg-jacket p-6 text-bg sm:p-8">
-          <p className="text-sm text-bg/75">Permintaan kirim tercatat</p>
-          <h1 className="mt-1 font-display text-3xl font-semibold italic">{done.length} buku siap dikemas</h1>
-          <ul className="mt-4 list-disc pl-5 text-sm text-bg/85">
+        <div className="card bg-primary p-6 shadow-hard sm:p-8">
+          <p className="text-sm text-ink/75">Permintaan kirim tercatat</p>
+          <h1 className="mt-1 font-display text-3xl font-semibold">{done.length} buku siap dikemas</h1>
+          <ul className="mt-4 list-disc pl-5 text-sm text-ink/75">
             {done.map((t) => (
               <li key={t}>{t}</li>
             ))}
@@ -122,7 +122,7 @@ function ShippingForm() {
         </p>
         <Link
           href={`/track?code=${code.trim().toUpperCase()}`}
-          className="mt-5 inline-block rounded-md bg-primary px-5 py-3 text-sm font-semibold text-white hover:bg-primary-hover"
+          className="btn btn-primary press mt-5 inline-block px-5 py-3 text-sm font-semibold"
         >
           Buka Lacak Order
         </Link>
@@ -176,7 +176,7 @@ function ShippingForm() {
         <button
           type="submit"
           disabled={checking}
-          className="mt-4 w-full rounded-md border border-primary px-4 py-2.5 text-sm font-semibold text-primary hover:bg-primary-soft disabled:opacity-60"
+          className="btn btn-secondary press mt-4 w-full px-4 py-2.5 text-sm font-semibold disabled:opacity-60"
         >
           {checking ? "Memeriksa…" : "Cek Buku"}
         </button>
@@ -193,7 +193,7 @@ function ShippingForm() {
                 : "Buku sudah tiba, tapi order-nya belum lunas."}
             </p>
           ) : (
-            <ul className="mt-3 divide-y divide-border">
+            <ul className="mt-3 divide-y-1 divide-line">
               {eligible.map((i) => (
                 <li key={i.order_item_id}>
                   <label className="flex cursor-pointer items-center gap-3 py-2.5 text-sm">
@@ -292,7 +292,7 @@ function ShippingForm() {
                 <input type="checkbox" checked={confirmed} onChange={(e) => setConfirmed(e.target.checked)} className="mt-0.5 h-4 w-4 accent-[var(--color-primary)]" />
                 <span>
                   Alamat di atas sudah benar, dan saya sudah membaca{" "}
-                  <Link href="/terms" target="_blank" className="font-medium text-primary hover:underline">
+                  <Link href="/terms" target="_blank" className="font-medium text-link hover:underline">
                     syarat &amp; ketentuan
                   </Link>
                   .
@@ -303,7 +303,7 @@ function ShippingForm() {
               <button
                 type="submit"
                 disabled={submitting}
-                className="mt-5 w-full rounded-md bg-primary px-4 py-3 text-sm font-semibold text-white hover:bg-primary-hover disabled:opacity-60"
+                className="btn btn-primary press mt-5 w-full px-4 py-3 text-sm font-semibold disabled:opacity-60"
               >
                 {submitting ? "Mengirim…" : `Ajukan Pengiriman (${selected.size} buku)`}
               </button>

@@ -56,7 +56,7 @@ export function ConfirmProvider({ children }: { children: React.ReactNode }) {
         }}
         // Klik di luar kotak (backdrop) = batal
         onClick={(e) => e.target === ref.current && close(false)}
-        className="fixed inset-0 m-auto h-fit w-[min(28rem,calc(100%-2rem))] rounded-lg border border-border bg-surface p-0 text-ink shadow-xl backdrop:bg-ink/40"
+        className="fixed inset-0 m-auto h-fit w-[min(28rem,calc(100%-2rem))] rounded-lg border border-ink bg-surface p-0 text-ink shadow-hard backdrop:bg-ink/40"
       >
         {options && (
           <div className="p-5">
@@ -65,19 +65,13 @@ export function ConfirmProvider({ children }: { children: React.ReactNode }) {
             </h2>
             {options.body && <p className="mt-2 whitespace-pre-line text-sm text-ink-muted">{options.body}</p>}
             <div className="mt-5 flex justify-end gap-2">
-              <button
-                type="button"
-                onClick={() => close(false)}
-                className="rounded-md border border-border px-4 py-2 text-sm font-semibold hover:bg-surface-sunken"
-              >
+              <button type="button" onClick={() => close(false)} className="btn btn-secondary press px-4 py-2 text-sm">
                 Batal
               </button>
               <button
                 type="button"
                 onClick={() => close(true)}
-                className={`rounded-md px-4 py-2 text-sm font-semibold text-white ${
-                  danger ? "bg-danger hover:brightness-110" : "bg-primary hover:bg-primary-hover"
-                }`}
+                className={`btn press px-4 py-2 text-sm ${danger ? "btn-danger" : "btn-primary"}`}
               >
                 {options.confirmLabel}
               </button>

@@ -11,7 +11,7 @@ const PAYMENT_STATE_MAP: Record<string, { label: string; className: string }> = 
 export const SHIPPING_STATUS_MAP: Record<string, { label: string; className: string }> = {
   not_shipped: { label: "Belum Dikirim", className: "bg-surface-sunken text-ink-muted" },
   shipped_to_indo: { label: "Di Perjalanan", className: "bg-info-soft text-info" },
-  arrived_in_indo: { label: "Tiba di Admin", className: "bg-primary-soft text-primary" },
+  arrived_in_indo: { label: "Tiba di Admin", className: "bg-primary-soft text-ink" },
   waiting_courier: { label: "Menunggu Kurir", className: "bg-warning-soft text-warning" },
   shipped: { label: "Dikirim", className: "bg-info-soft text-info" },
   delivered: { label: "Diterima", className: "bg-success-soft text-success" },
@@ -52,7 +52,7 @@ export function StatusChip({
   const entry = MAPS[kind][status] ?? { label: status, className: "bg-surface-sunken text-ink-muted" };
   return (
     <span
-      className={`inline-flex shrink-0 items-center whitespace-nowrap rounded-full px-2.5 py-1 text-xs font-semibold ${entry.className}`}
+      className={`inline-flex shrink-0 items-center whitespace-nowrap rounded-full border-[1.5px] border-ink px-2.5 py-0.5 text-xs font-bold ${entry.className}`}
     >
       {entry.label}
     </span>

@@ -146,7 +146,7 @@ function PaymentCard({
             href={proofUrl}
             target="_blank"
             rel="noopener noreferrer"
-            className="flex aspect-[3/4] items-center justify-center rounded-md border border-border bg-surface-sunken text-sm font-semibold text-primary"
+            className="flex aspect-[3/4] items-center justify-center rounded-md border border-border bg-surface-sunken text-sm font-semibold text-link"
           >
             Buka PDF
           </a>
@@ -161,7 +161,7 @@ function PaymentCard({
       <div className="flex min-w-0 flex-col">
         <div className="flex flex-wrap items-start justify-between gap-2">
           <div>
-            <Link href={`/admin/orders/detail?id=${order?.id}`} className="font-display text-lg font-semibold text-primary hover:underline">
+            <Link href={`/admin/orders/detail?id=${order?.id}`} className="font-display text-lg font-semibold text-link hover:underline">
               {order?.order_code}
             </Link>
             <p className="text-sm text-ink-muted">
@@ -201,7 +201,7 @@ function PaymentCard({
         <p className="mt-2 text-xs text-ink-faint">Diunggah {formatDateID(payment.created_at, true)}</p>
 
         {pending && (
-          <div className="mt-4 border-t border-border pt-4">
+          <div className="mt-4 border-t-1 border-line pt-4">
             {mode === "idle" ? (
               <div className="flex flex-wrap items-end gap-3">
                 <label className="text-xs font-medium text-ink-muted">
@@ -217,7 +217,7 @@ function PaymentCard({
                 <button
                   onClick={() => review(true)}
                   disabled={busy}
-                  className="rounded-md bg-primary px-4 py-2 text-sm font-semibold text-white hover:bg-primary-hover disabled:opacity-60"
+                  className="btn btn-primary press px-4 py-2 text-sm font-semibold disabled:opacity-60"
                 >
                   {busy ? "Menyimpan…" : `Verifikasi ${formatIDR(Number(amount) || 0)}`}
                 </button>

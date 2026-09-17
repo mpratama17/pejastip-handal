@@ -28,7 +28,7 @@ export default function HowToOrderPage() {
           </p>
           <Link
             href="/order"
-            className="mt-4 rounded-md bg-primary px-4 py-2.5 text-center text-sm font-semibold text-white hover:bg-primary-hover"
+            className="btn btn-primary press mt-4 px-4 py-2.5 text-center text-sm font-semibold"
           >
             Buka Form Order
           </Link>
@@ -43,7 +43,7 @@ export default function HowToOrderPage() {
               href={waLink(s.wa_admin_number, "Halo Admin, saya mau order untuk batch [nama batch].")}
               target="_blank"
               rel="noopener noreferrer"
-              className="mt-4 rounded-md bg-[#25D366] px-4 py-2.5 text-center text-sm font-semibold text-[#0b3b22] hover:brightness-95"
+              className="btn btn-wa press mt-4 px-4 py-2.5 text-sm"
             >
               Chat Admin
             </a>
@@ -55,7 +55,7 @@ export default function HowToOrderPage() {
       <ol className="mt-6 flex flex-col gap-5">
         {WEB_STEPS.map((step, i) => (
           <li key={step.title} className="flex gap-4">
-            <span className="flex h-8 w-8 shrink-0 items-center justify-center rounded-full bg-primary-soft text-sm font-bold text-primary">
+            <span className="flex h-8 w-8 shrink-0 items-center justify-center rounded-full bg-primary-soft text-sm font-bold text-ink">
               {i + 1}
             </span>
             <div className="pt-1">
@@ -68,7 +68,7 @@ export default function HowToOrderPage() {
 
       <p className="mt-10 text-sm text-ink-muted">
         Dengan order, kamu dianggap sudah membaca{" "}
-        <Link href="/terms" className="font-medium text-primary hover:underline">
+        <Link href="/terms" className="font-medium text-link hover:underline">
           Syarat &amp; Ketentuan
         </Link>
         .

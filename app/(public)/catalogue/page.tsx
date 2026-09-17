@@ -97,7 +97,7 @@ function Catalogue() {
               value={eventId}
               onChange={(e) => router.replace(`/catalogue?event=${e.target.value}`, { scroll: false })}
               disabled={!events?.length}
-              className="w-full rounded-md border border-border bg-primary-soft px-3 py-2.5 text-sm font-medium text-primary focus:outline-none focus:ring-2 focus:ring-primary/30"
+              className="w-full rounded-md border border-border bg-primary-soft px-3 py-2.5 text-sm font-medium text-ink"
             >
               {events?.length === 0 && <option>Belum ada batch dengan katalog</option>}
               {events?.map((ev) => (
@@ -119,12 +119,12 @@ function Catalogue() {
               setPage(1);
             }}
             placeholder="Cari judul, penulis, atau ISBN"
-            className="w-full rounded-md border border-border px-3 py-2.5 text-sm focus:border-primary focus:outline-none focus:ring-2 focus:ring-primary/30 sm:max-w-sm"
+            className="w-full rounded-md border border-border px-3 py-2.5 text-sm sm:max-w-sm"
           />
           {event && isAcceptingOrders(event, now) && (
             <Link
               href={`/order?event=${event.id}`}
-              className="rounded-md bg-primary px-4 py-2.5 text-center text-sm font-semibold text-white hover:bg-primary-hover"
+              className="btn btn-primary press px-4 py-2.5 text-center text-sm font-semibold"
             >
               Order dari batch ini
             </Link>
@@ -146,7 +146,7 @@ function Catalogue() {
             {/* Desktop: tabel */}
             <div className="mt-6 hidden overflow-x-auto md:block">
               <table className="w-full text-sm">
-                <thead className="border-b border-border text-left text-ink-muted">
+                <thead className="border-b-1 border-line text-left text-ink-muted">
                   <tr>
                     <th className="py-2 pr-4 font-medium">ISBN</th>
                     <th className="py-2 pr-4 font-medium">Judul</th>
@@ -158,7 +158,7 @@ function Catalogue() {
                 </thead>
                 <tbody>
                   {pageRows.map((r) => (
-                    <tr key={r.event_item_id} className="border-b border-border/60 last:border-0">
+                    <tr key={r.event_item_id} className="border-b-1 border-line last:border-0">
                       <td className="py-3 pr-4 tabular-nums text-ink-muted">{r.isbn ?? "—"}</td>
                       <td className="py-3 pr-4 font-medium">{r.title}</td>
                       <td className="py-3 pr-4 text-ink-muted">{r.author ?? "—"}</td>
@@ -166,7 +166,7 @@ function Catalogue() {
                       <td className="py-3 pr-4 text-right">
                         <StockLabel left={r.stock_left} />
                       </td>
-                      <td className="py-3 text-right font-semibold tabular-nums text-accent">{formatIDR(r.price_idr)}</td>
+                      <td className="py-3 text-right font-semibold tabular-nums text-accent-ink">{formatIDR(r.price_idr)}</td>
                     </tr>
                   ))}
                 </tbody>
@@ -176,7 +176,7 @@ function Catalogue() {
             {/* Mobile: kartu */}
             <ul className="mt-6 flex flex-col gap-3 md:hidden">
               {pageRows.map((r) => (
-                <li key={r.event_item_id} className="flex gap-3 border-b border-border/60 pb-3 last:border-0">
+                <li key={r.event_item_id} className="flex gap-3 border-b-1 border-line pb-3 last:border-0">
                   <div className="w-16 shrink-0">
                     <BookCover compact title={r.title} coverUrl={r.cover_url} />
                   </div>
@@ -187,7 +187,7 @@ function Catalogue() {
                     </p>
                     {r.isbn && <p className="text-xs tabular-nums text-ink-faint">{r.isbn}</p>}
                     <div className="mt-1.5 flex items-center justify-between">
-                      <span className="font-semibold tabular-nums text-accent">{formatIDR(r.price_idr)}</span>
+                      <span className="font-semibold tabular-nums text-accent-ink">{formatIDR(r.price_idr)}</span>
                       <StockLabel left={r.stock_left} />
                     </div>
                   </div>
@@ -224,7 +224,7 @@ function Catalogue() {
 
       <p className="mt-6 text-center text-sm text-ink-muted">
         Tidak menemukan buku yang kamu cari?{" "}
-        <Link href="/request" className="font-medium text-primary hover:underline">
+        <Link href="/request" className="font-medium text-link hover:underline">
           Request buku di sini
         </Link>
       </p>

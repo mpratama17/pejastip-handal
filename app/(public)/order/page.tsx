@@ -8,6 +8,7 @@ import { formatIDR, formatDateID } from "@/lib/format";
 import { BOOK_FORMAT_LABEL, EVENT_TYPE_LABEL, isAcceptingOrders } from "@/lib/labels";
 import { waLink, type BankAccount } from "@/lib/site-settings";
 import { BookCover } from "@/components/public/book-cover";
+import { DaisySticker, StarSticker } from "@/components/public/stickers";
 import { PaymentProofUpload } from "@/components/public/payment-proof-upload";
 import type { Database } from "@/types/database";
 
@@ -17,7 +18,7 @@ type OrderResult = Database["public"]["Functions"]["create_order"]["Returns"][nu
 
 const STEPS = ["Data diri", "Pilih batch", "Pilih buku", "Pembayaran", "Konfirmasi"];
 const INPUT =
-  "mt-1 w-full rounded-md border border-border bg-surface px-3 py-2.5 text-sm text-ink focus:border-primary focus:outline-none focus:ring-2 focus:ring-primary/30";
+  "mt-1 w-full rounded-md border border-border bg-surface px-3 py-2.5 text-sm text-ink";
 
 export default function OrderPage() {
   return (
@@ -164,7 +165,7 @@ function OrderForm() {
         </p>
         <div className="mt-2 flex gap-1.5">
           {STEPS.map((label, i) => (
-            <div key={label} className={`h-1.5 flex-1 rounded-full ${i < step ? "bg-primary" : "bg-surface-sunken"}`} />
+            <div key={label} className={`h-1.5 flex-1 rounded-full ${i < step ? "btn btn-primary press" : "bg-surface-sunken"}`} />
           ))}
         </div>
       </div>
@@ -209,7 +210,7 @@ function OrderForm() {
             {events?.length === 0 && !loadError && (
               <p className="text-sm text-ink-muted">
                 Belum ada batch dengan katalog yang buka.{" "}
-                <Link href="/ongoing" className="font-medium text-primary hover:underline">
+                <Link href="/ongoing" className="font-medium text-link hover:underline">
                   Lihat batch berjalan
                 </Link>
               </p>
@@ -221,7 +222,7 @@ function OrderForm() {
                 onClick={() => chooseEvent(ev.id)}
                 aria-pressed={eventId === ev.id}
                 className={`rounded-md border p-4 text-left transition-colors ${
-                  eventId === ev.id ? "border-primary bg-primary-soft" : "border-border hover:border-border-strong"
+                  eventId === ev.id ? "border-ink bg-primary-soft" : "border-border"
                 }`}
               >
                 <p className="font-semibold">{ev.name}</p>
@@ -247,7 +248,7 @@ function OrderForm() {
             {catalogue === null ? (
               <p className="py-8 text-center text-sm text-ink-muted">Memuat katalog…</p>
             ) : (
-              <ul className="mt-3 flex max-h-[26rem] flex-col divide-y divide-border overflow-y-auto">
+              <ul className="mt-3 flex max-h-[26rem] flex-col divide-y-1 divide-line overflow-y-auto">
                 {filtered.map((r) => {
                   const qty = cart[r.event_item_id] ?? 0;
                   const soldOut = r.stock_left === 0;
@@ -261,7 +262,7 @@ function OrderForm() {
                         <p className="text-xs text-ink-muted">
                           {[r.author, BOOK_FORMAT_LABEL[r.format]].filter(Boolean).join(" · ")}
                         </p>
-                        <p className="mt-0.5 text-sm font-semibold tabular-nums text-accent">
+                        <p className="mt-0.5 text-sm font-semibold tabular-nums text-accent-ink">
                           {formatIDR(r.price_idr)}
                           {r.stock_left !== null && (
                             <span className={`ml-2 text-xs font-normal ${soldOut ? "text-danger" : "text-ink-muted"}`}>
@@ -284,7 +285,7 @@ function OrderForm() {
                 )}
               </ul>
             )}
-            <div className="mt-4 flex items-center justify-between border-t border-border pt-3 text-sm">
+            <div className="mt-4 flex items-center justify-between border-t-1 border-line pt-3 text-sm">
               <span className="text-ink-muted">{itemCount} buku dipilih</span>
               <span className="font-semibold tabular-nums">{formatIDR(subtotal)}</span>
             </div>
@@ -303,7 +304,7 @@ function OrderForm() {
                     onClick={() => setPaymentType(t)}
                     aria-pressed={paymentType === t}
                     className={`rounded-md border p-3 text-left text-sm ${
-                      paymentType === t ? "border-primary bg-primary-soft" : "border-border hover:border-border-strong"
+                      paymentType === t ? "border-ink bg-primary-soft" : "border-border"
                     }`}
                   >
                     <span className="block font-semibold">{t === "dp" ? `DP ${dpPercent}%` : "Lunas"}</span>
@@ -345,11 +346,11 @@ function OrderForm() {
                   <span className="tabular-nums">{formatIDR(l.row.price_idr * l.qty)}</span>
                 </div>
               ))}
-              <div className="mt-2 flex justify-between border-t border-border pt-2 font-semibold">
+              <div className="mt-2 flex justify-between border-t-1 border-line pt-2 font-semibold">
                 <span>Total</span>
                 <span className="tabular-nums">{formatIDR(subtotal)}</span>
               </div>
-              <div className="mt-1 flex justify-between font-semibold text-accent">
+              <div className="mt-1 flex justify-between font-semibold text-accent-ink">
                 <span>Bayar sekarang ({paymentType === "dp" ? `DP ${dpPercent}%` : "lunas"})</span>
                 <span className="tabular-nums">{formatIDR(nominalDue)}</span>
               </div>
@@ -363,7 +364,7 @@ function OrderForm() {
               />
               <span>
                 Saya sudah membaca{" "}
-                <Link href="/terms" target="_blank" className="font-medium text-primary hover:underline">
+                <Link href="/terms" target="_blank" className="font-medium text-link hover:underline">
                   syarat &amp; ketentuan
                 </Link>{" "}
                 dan setuju dengan harga di atas.
@@ -388,7 +389,7 @@ function OrderForm() {
             <button
               type="button"
               onClick={() => go(1)}
-              className="flex-1 rounded-md bg-primary px-4 py-3 text-sm font-semibold text-white hover:bg-primary-hover"
+              className="btn btn-primary press flex-1 px-4 py-3 text-sm font-semibold"
             >
               Lanjut
             </button>
@@ -397,7 +398,7 @@ function OrderForm() {
               type="button"
               onClick={submit}
               disabled={submitting}
-              className="flex-1 rounded-md bg-primary px-4 py-3 text-sm font-semibold text-white hover:bg-primary-hover disabled:opacity-60"
+              className="btn btn-primary press flex-1 px-4 py-3 text-sm font-semibold disabled:opacity-60"
             >
               {submitting ? "Mengirim…" : "Kirim Order"}
             </button>
@@ -456,25 +457,27 @@ function OrderSuccess({ result }: { result: OrderResult }) {
 
   return (
     <div className="mx-auto max-w-2xl px-4 py-10">
-      <div className="rounded-lg bg-jacket p-6 text-center text-bg sm:p-8">
+      <div className="card relative overflow-hidden bg-primary p-6 text-center shadow-hard sm:p-8">
+        <StarSticker className="absolute -left-3 -top-3 w-14" />
+        <DaisySticker className="absolute -bottom-5 -right-4 w-16" />
         {code ? (
           <>
-            <p className="text-sm text-bg/75">Order {result.order_code} tercatat. Kode pelacakanmu:</p>
+            <p className="text-sm text-ink/75">Order {result.order_code} tercatat. Kode pelacakanmu:</p>
             <button
               type="button"
               onClick={() => copy(code)}
-              className="mt-2 font-display text-4xl font-semibold italic tracking-wide hover:opacity-90"
+              className="mt-2 font-display text-5xl font-extrabold tracking-wider hover:opacity-90"
             >
               {code}
             </button>
-            <p className="mt-1 text-xs text-bg/60">{copied === code ? "Tersalin" : "Ketuk untuk menyalin · simpan kode ini"}</p>
+            <p className="mt-1 text-xs text-ink/75">{copied === code ? "Tersalin" : "Ketuk untuk menyalin · simpan kode ini"}</p>
           </>
         ) : (
           // Nomor WA sudah terdaftar: kode lama tidak ditampilkan ke siapa pun
           // yang sekadar tahu nomornya (kode = kunci Lacak Order & Form Kirim).
           <>
-            <p className="font-display text-3xl font-semibold italic">Order {result.order_code} tercatat</p>
-            <p className="mx-auto mt-2 max-w-md text-sm text-bg/75">
+            <p className="font-display text-3xl font-semibold">Order {result.order_code} tercatat</p>
+            <p className="mx-auto mt-2 max-w-md text-sm text-ink/75">
               Nomor WhatsApp ini sudah terdaftar. Order baru masuk ke kode pelacakan yang sudah kamu punya — pakai kode itu
               di Lacak Order untuk upload bukti transfer. Lupa kode? Chat admin.
             </p>
@@ -485,7 +488,7 @@ function OrderSuccess({ result }: { result: OrderResult }) {
       <div className="mt-4 rounded-lg border border-border bg-surface p-5 sm:p-6">
         <div className="flex items-baseline justify-between gap-3">
           <p className="text-sm text-ink-muted">Transfer sekarang</p>
-          <p className="font-display text-3xl font-semibold tabular-nums text-accent">{formatIDR(result.nominal_due_idr)}</p>
+          <p className="font-display text-3xl font-semibold tabular-nums text-accent-ink">{formatIDR(result.nominal_due_idr)}</p>
         </div>
         <p className="mt-1 text-right text-xs text-ink-muted">dari total {formatIDR(result.total_idr)}</p>
 
@@ -532,7 +535,7 @@ function OrderSuccess({ result }: { result: OrderResult }) {
           )}
           target="_blank"
           rel="noopener noreferrer"
-          className={`${code ? "mt-6" : ""} block rounded-md bg-[#25D366] px-4 py-3 text-center text-sm font-semibold text-[#0b3b22] hover:brightness-95`}
+          className={`${code ? "mt-6" : ""} btn btn-wa press flex w-full px-4 py-3 text-sm`}
         >
           Konfirmasi via WhatsApp
         </a>
@@ -540,7 +543,7 @@ function OrderSuccess({ result }: { result: OrderResult }) {
       </div>
 
       <p className="mt-6 text-center text-sm">
-        <Link href={code ? `/track?code=${code}` : "/track"} className="font-medium text-primary hover:underline">
+        <Link href={code ? `/track?code=${code}` : "/track"} className="font-medium text-link hover:underline">
           Lihat status order di Lacak Order
         </Link>
       </p>

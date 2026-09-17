@@ -73,7 +73,7 @@ export default function AdminDashboardPage() {
       <div className="mt-10">
         <div className="flex items-center justify-between">
           <h2 className="text-sm font-semibold text-ink">Order terbaru</h2>
-          <Link href="/admin/orders" className="text-sm font-medium text-primary hover:underline">
+          <Link href="/admin/orders" className="text-sm font-medium text-link hover:underline">
             Lihat semua
           </Link>
         </div>
@@ -89,9 +89,9 @@ export default function AdminDashboardPage() {
             </thead>
             <tbody>
               {recentOrders.map((o) => (
-                <tr key={o.id} className="border-t border-border">
+                <tr key={o.id} className="border-t-1 border-line">
                   <td className="px-4 py-2">
-                    <Link href={`/admin/orders/detail?id=${o.id}`} className="font-medium text-primary hover:underline">
+                    <Link href={`/admin/orders/detail?id=${o.id}`} className="font-medium text-link hover:underline">
                       {o.order_code}
                     </Link>
                   </td>
@@ -119,7 +119,7 @@ export default function AdminDashboardPage() {
 
 function StatCard({ label, value, href }: { label: string; value: string | number | undefined; href: string }) {
   return (
-    <Link href={href} className="rounded-lg border border-border bg-surface p-4 transition-colors hover:border-primary">
+    <Link href={href} className="press rounded-lg border border-border bg-surface p-4">
       <p className="text-xs font-medium text-ink-muted">{label}</p>
       <p className="mt-1 font-display text-2xl font-semibold text-ink">{value ?? "…"}</p>
     </Link>

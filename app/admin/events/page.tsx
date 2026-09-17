@@ -22,7 +22,7 @@ const CASCADE_NOTE: Partial<Record<EventStatus, string>> = {
 };
 
 const inputCls =
-  "mt-1 w-full rounded-sm border border-border bg-surface px-3 py-2 text-sm text-ink focus:border-primary focus:outline-none focus:ring-2 focus:ring-primary/30";
+  "mt-1 w-full rounded-sm border border-border bg-surface px-3 py-2 text-sm text-ink";
 
 type FormState = {
   name: string;
@@ -111,7 +111,7 @@ export default function AdminEventsPage() {
         {editing !== "new" && (
           <button
             onClick={() => setEditing("new")}
-            className="rounded-md bg-primary px-4 py-2 text-sm font-semibold text-white hover:bg-primary-hover"
+            className="btn btn-primary press px-4 py-2 text-sm font-semibold"
           >
             + Event Baru
           </button>
@@ -151,7 +151,7 @@ export default function AdminEventsPage() {
           <tbody>
             {events?.map((ev) =>
               editing === ev.id ? (
-                <tr key={ev.id} className="border-t border-border">
+                <tr key={ev.id} className="border-t-1 border-line">
                   <td colSpan={6} className="p-0">
                     <EventForm
                       eventId={ev.id}
@@ -166,7 +166,7 @@ export default function AdminEventsPage() {
                   </td>
                 </tr>
               ) : (
-                <tr key={ev.id} className="border-t border-border align-top">
+                <tr key={ev.id} className="border-t-1 border-line align-top">
                   <td className="px-4 py-3">
                     <p className="font-medium text-ink">{ev.name}</p>
                     <p className="text-xs text-ink-muted">{EVENT_TYPE_LABEL[ev.type]}</p>
@@ -201,7 +201,7 @@ export default function AdminEventsPage() {
                     <Link href={`/admin/books?event=${ev.id}`} className="mr-3 text-sm font-medium text-ink-muted hover:text-ink">
                       Katalog
                     </Link>
-                    <button onClick={() => setEditing(ev.id)} className="text-sm font-semibold text-primary hover:underline">
+                    <button onClick={() => setEditing(ev.id)} className="text-sm font-semibold text-link hover:underline">
                       Edit
                     </button>
                   </td>
@@ -336,7 +336,7 @@ function EventForm({
         </p>
       )}
       <div className="mt-4 flex gap-2">
-        <button type="submit" disabled={saving} className="rounded-md bg-primary px-4 py-2 text-sm font-semibold text-white hover:bg-primary-hover disabled:opacity-60">
+        <button type="submit" disabled={saving} className="btn btn-primary press px-4 py-2 text-sm font-semibold disabled:opacity-60">
           {saving ? "Menyimpan…" : eventId ? "Simpan perubahan" : "Buat event"}
         </button>
         <button type="button" onClick={onCancel} className="rounded-md border border-border px-4 py-2 text-sm font-semibold hover:bg-surface-sunken">

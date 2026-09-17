@@ -103,7 +103,7 @@ export function PaymentProofUpload({
           type="file"
           accept=".jpg,.jpeg,.png,.webp,.pdf"
           onChange={(e) => pickFile(e.target.files?.[0])}
-          className="mt-1 block w-full text-sm file:mr-3 file:rounded-md file:border-0 file:bg-primary-soft file:px-3 file:py-2 file:text-sm file:font-semibold file:text-primary"
+          className="mt-1 block w-full text-sm file:mr-3 file:rounded-md file:border-0 file:bg-primary-soft file:px-3 file:py-2 file:text-sm file:font-semibold file:text-ink"
         />
       </label>
       <div className="grid grid-cols-2 gap-3">
@@ -115,7 +115,7 @@ export function PaymentProofUpload({
             inputMode="numeric"
             value={amount}
             onChange={(e) => setAmount(e.target.value)}
-            className="mt-1 w-full rounded-md border border-border px-3 py-2 text-sm tabular-nums focus:border-primary focus:outline-none focus:ring-2 focus:ring-primary/30"
+            className="mt-1 w-full rounded-md border border-border px-3 py-2 text-sm tabular-nums"
           />
         </label>
         <label className="block text-sm font-medium">
@@ -124,7 +124,7 @@ export function PaymentProofUpload({
             type="date"
             value={paidAt}
             onChange={(e) => setPaidAt(e.target.value)}
-            className="mt-1 w-full rounded-md border border-border px-3 py-2 text-sm focus:border-primary focus:outline-none focus:ring-2 focus:ring-primary/30"
+            className="mt-1 w-full rounded-md border border-border px-3 py-2 text-sm"
           />
         </label>
       </div>
@@ -132,7 +132,7 @@ export function PaymentProofUpload({
       <button
         onClick={upload}
         disabled={!file || status === "uploading"}
-        className="rounded-md bg-primary px-4 py-2.5 text-sm font-semibold text-white hover:bg-primary-hover disabled:opacity-50"
+        className="btn btn-primary press px-4 py-2.5 text-sm font-semibold disabled:opacity-50"
       >
         {status === "uploading" ? "Mengunggah…" : "Upload Bukti"}
       </button>

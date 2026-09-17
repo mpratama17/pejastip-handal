@@ -38,9 +38,9 @@ export function SiteHeader() {
   const active = (href: string) => (href === "/" ? pathname === "/" : pathname.startsWith(href));
 
   return (
-    <header className="sticky top-0 z-30 border-b border-border bg-surface/95 backdrop-blur">
+    <header className="sticky top-0 z-30 border-b border-ink bg-surface">
       <div className="mx-auto flex h-14 max-w-5xl items-center justify-between gap-4 px-4">
-        <Link href="/" className="font-display text-lg font-semibold italic text-ink">
+        <Link href="/" className="font-display text-xl font-extrabold tracking-tight text-ink">
           {settings?.store_name || " "}
         </Link>
 
@@ -50,21 +50,21 @@ export function SiteHeader() {
               <div key={item.label} className="group relative">
                 <button
                   type="button"
-                  className={`flex items-center gap-1 rounded-md px-3 py-2 text-sm font-medium ${
-                    item.links.some((l) => active(l.href)) ? "text-primary" : "text-ink-muted hover:text-ink"
+                  className={`flex items-center gap-1 rounded-full px-3 py-2 text-sm font-semibold ${
+                    item.links.some((l) => active(l.href)) ? "bg-primary-soft text-ink" : "text-ink-muted hover:text-ink"
                   }`}
                 >
                   {item.label}
                   <Chevron />
                 </button>
                 <div className="invisible absolute left-0 top-full min-w-48 pt-1 opacity-0 transition-opacity group-focus-within:visible group-focus-within:opacity-100 group-hover:visible group-hover:opacity-100">
-                  <div className="rounded-md border border-border bg-surface p-1 shadow-md">
+                  <div className="card p-1.5 shadow-hard">
                     {item.links.map((l) => (
                       <Link
                         key={l.href}
                         href={l.href}
-                        className={`block rounded-sm px-3 py-2 text-sm ${
-                          active(l.href) ? "bg-primary-soft text-primary" : "text-ink hover:bg-surface-sunken"
+                        className={`block rounded-sm px-3 py-2 text-sm font-medium ${
+                          active(l.href) ? "bg-primary-soft text-ink" : "text-ink hover:bg-surface-sunken"
                         }`}
                       >
                         {l.label}
@@ -77,8 +77,8 @@ export function SiteHeader() {
               <Link
                 key={item.href}
                 href={item.href}
-                className={`rounded-md px-3 py-2 text-sm font-medium ${
-                  active(item.href) ? "text-primary" : "text-ink-muted hover:text-ink"
+                className={`rounded-full px-3 py-2 text-sm font-semibold ${
+                  active(item.href) ? "bg-primary-soft text-ink" : "text-ink-muted hover:text-ink"
                 }`}
               >
                 {item.label}
@@ -87,7 +87,7 @@ export function SiteHeader() {
           )}
           <Link
             href="/order"
-            className="ml-2 rounded-md bg-primary px-4 py-2 text-sm font-semibold text-white hover:bg-primary-hover"
+            className="btn btn-primary press ml-2 px-4 py-2 text-sm"
           >
             Order Sekarang
           </Link>
@@ -95,11 +95,11 @@ export function SiteHeader() {
 
         {/* key = pathname → menu tertutup otomatis setelah pindah halaman */}
         <details key={pathname} className="group md:hidden">
-          <summary className="flex h-10 w-10 cursor-pointer list-none items-center justify-center rounded-md text-ink hover:bg-surface-sunken [&::-webkit-details-marker]:hidden">
+          <summary className="btn btn-secondary flex h-10 w-10 cursor-pointer list-none [&::-webkit-details-marker]:hidden">
             <span className="sr-only">Buka menu</span>
             <MenuIcon />
           </summary>
-          <div className="absolute inset-x-0 top-14 border-b border-border bg-surface px-4 pb-5 pt-2 shadow-md">
+          <div className="absolute inset-x-0 top-14 border-b border-ink bg-surface px-4 pb-5 pt-2">
             {NAV.map((item) =>
               isGroup(item) ? (
                 <div key={item.label} className="mt-3">
@@ -114,7 +114,7 @@ export function SiteHeader() {
             )}
             <Link
               href="/order"
-              className="mt-4 block rounded-md bg-primary px-4 py-3 text-center text-sm font-semibold text-white"
+              className="btn btn-primary press mt-4 flex w-full px-4 py-3 text-sm"
             >
               Order Sekarang
             </Link>
@@ -129,7 +129,7 @@ function MobileLink({ link, active }: { link: NavLink; active: boolean }) {
   return (
     <Link
       href={link.href}
-      className={`block rounded-md px-2 py-3 text-base ${active ? "font-semibold text-primary" : "text-ink"}`}
+      className={`block rounded-full px-3 py-3 text-base ${active ? "bg-primary-soft font-semibold" : "text-ink"}`}
     >
       {link.label}
     </Link>

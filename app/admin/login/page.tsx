@@ -51,7 +51,7 @@ export default function AdminLoginPage() {
   return (
     <div className="flex min-h-screen items-center justify-center bg-bg px-6">
       <div className="w-full max-w-sm rounded-lg border border-border bg-surface p-6">
-        <p className="font-display text-lg italic text-ink">Pejastip Handal</p>
+        <p className="font-display text-lg text-ink">Pejastip Handal</p>
         <h1 className="mt-1 text-sm text-ink-muted">Masuk ke dashboard admin</h1>
 
         <button
@@ -81,7 +81,7 @@ export default function AdminLoginPage() {
           autoComplete="username"
           value={email}
           onChange={(e) => setEmail(e.target.value)}
-          className="mt-1 w-full rounded-sm border border-border bg-surface px-3 py-2 text-sm text-ink focus:border-primary focus:outline-none focus:ring-2 focus:ring-primary/30"
+          className="mt-1 w-full rounded-sm border border-border bg-surface px-3 py-2 text-sm text-ink"
         />
 
         <label className="mt-4 block text-sm font-medium text-ink" htmlFor="password">
@@ -94,7 +94,7 @@ export default function AdminLoginPage() {
           autoComplete="current-password"
           value={password}
           onChange={(e) => setPassword(e.target.value)}
-          className="mt-1 w-full rounded-sm border border-border bg-surface px-3 py-2 text-sm text-ink focus:border-primary focus:outline-none focus:ring-2 focus:ring-primary/30"
+          className="mt-1 w-full rounded-sm border border-border bg-surface px-3 py-2 text-sm text-ink"
         />
 
         {error && <p className="mt-3 text-sm text-danger">{error}</p>}
@@ -102,7 +102,7 @@ export default function AdminLoginPage() {
         <button
           type="submit"
           disabled={loading}
-          className="mt-6 w-full rounded-md bg-primary px-4 py-2.5 text-sm font-semibold text-white transition-colors hover:bg-primary-hover disabled:opacity-60"
+          className="btn btn-primary press mt-6 w-full px-4 py-2.5 text-sm font-semibold disabled:opacity-60"
         >
           {loading ? "Masuk…" : "Masuk"}
         </button>

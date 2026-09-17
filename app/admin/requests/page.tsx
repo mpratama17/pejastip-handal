@@ -13,7 +13,7 @@ type RequestStatus = Database["public"]["Enums"]["request_status"];
 const STATUS: { value: RequestStatus; label: string; className: string }[] = [
   { value: "new", label: "Baru", className: "bg-info-soft text-info" },
   { value: "sourcing", label: "Dicari", className: "bg-warning-soft text-warning" },
-  { value: "quoted", label: "Ada harga", className: "bg-primary-soft text-primary" },
+  { value: "quoted", label: "Ada harga", className: "bg-primary-soft text-ink" },
   { value: "fulfilled", label: "Masuk katalog", className: "bg-success-soft text-success" },
   { value: "rejected", label: "Tidak tersedia", className: "bg-surface-sunken text-ink-muted" },
 ];
@@ -64,7 +64,7 @@ export default function AdminRequestsPage() {
             {rows?.map((r) => {
               const st = STATUS.find((s) => s.value === r.status)!;
               return (
-                <tr key={r.id} className="border-t border-border bg-surface align-top">
+                <tr key={r.id} className="border-t-1 border-line bg-surface align-top">
                   <td className="px-4 py-2">
                     <p className="font-medium">{r.title}</p>
                     {r.notes && <p className="text-xs text-ink-muted">{r.notes}</p>}
@@ -79,7 +79,7 @@ export default function AdminRequestsPage() {
                       href={waLink(r.whatsapp, `Halo ${r.customer_name}, soal request buku "${r.title}"…`)}
                       target="_blank"
                       rel="noopener noreferrer"
-                      className="block text-xs text-primary hover:underline"
+                      className="block text-xs text-link hover:underline"
                     >
                       {r.whatsapp}
                     </a>

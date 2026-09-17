@@ -89,7 +89,7 @@ function Customers() {
                     <tr
                       key={c.id}
                       onClick={() => router.replace(`/admin/customers?id=${c.id}`, { scroll: false })}
-                      className={`cursor-pointer border-t border-border ${c.id === selectedId ? "bg-primary-soft" : "bg-surface hover:bg-surface-sunken"}`}
+                      className={`cursor-pointer border-t-1 border-line ${c.id === selectedId ? "bg-primary-soft" : "bg-surface hover:bg-surface-sunken"}`}
                     >
                       <td className="px-4 py-2 font-medium">
                         {c.full_name}
@@ -99,7 +99,7 @@ function Customers() {
                       </td>
                       <td className="px-4 py-2 tabular-nums text-ink-muted">{c.code}</td>
                       <td className="px-4 py-2 tabular-nums text-ink-muted">{c.whatsapp}</td>
-                      <td className={`px-4 py-2 text-right tabular-nums ${bal > 0 ? "font-semibold text-accent" : "text-ink-faint"}`}>
+                      <td className={`px-4 py-2 text-right tabular-nums ${bal > 0 ? "font-semibold text-accent-ink" : "text-ink-faint"}`}>
                         {formatIDR(bal)}
                       </td>
                     </tr>
@@ -201,11 +201,11 @@ function CustomerDetail({ customer: c, onChanged }: { customer: Customer; onChan
       <p className="text-xs text-ink-faint">Pelanggan sejak {formatDateID(c.created_at)}</p>
 
       <h3 className="mt-5 text-sm font-semibold">Riwayat order</h3>
-      <ul className="mt-2 flex flex-col divide-y divide-border text-sm">
+      <ul className="mt-2 flex flex-col divide-y-1 divide-line text-sm">
         {orders?.map((o) => (
           <li key={o.id} className="flex items-center justify-between gap-2 py-2">
             <div className="min-w-0">
-              <Link href={`/admin/orders/detail?id=${o.id}`} className="font-medium text-primary hover:underline">
+              <Link href={`/admin/orders/detail?id=${o.id}`} className="font-medium text-link hover:underline">
                 {o.order_code}
               </Link>
               <p className="truncate text-xs text-ink-muted">{o.events?.name}</p>

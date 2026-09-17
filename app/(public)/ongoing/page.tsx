@@ -52,7 +52,7 @@ export default function OngoingPage() {
         </div>
         <Link
           href="/track"
-          className="rounded-md border border-primary px-4 py-2.5 text-center text-sm font-semibold text-primary hover:bg-primary-soft"
+          className="btn btn-secondary press px-4 py-2.5 text-center text-sm font-semibold"
         >
           Lacak order pribadi
         </Link>
@@ -111,13 +111,13 @@ export default function OngoingPage() {
                 </dl>
 
                 {accepting && (
-                  <div className="mt-4 flex gap-4 border-t border-border pt-4 text-sm font-medium">
+                  <div className="mt-4 flex gap-4 border-t-1 border-line pt-4 text-sm font-medium">
                     {withCatalogue.has(ev.id) ? (
                       <>
-                        <Link href={`/catalogue?event=${ev.id}`} className="text-primary hover:underline">
+                        <Link href={`/catalogue?event=${ev.id}`} className="text-link hover:underline">
                           Lihat katalog
                         </Link>
-                        <Link href={`/order?event=${ev.id}`} className="text-primary hover:underline">
+                        <Link href={`/order?event=${ev.id}`} className="text-link hover:underline">
                           Order
                         </Link>
                       </>
@@ -128,7 +128,7 @@ export default function OngoingPage() {
                           href={waLink(settings.wa_admin_number, `Halo Admin, saya mau order untuk ${ev.name}.`)}
                           target="_blank"
                           rel="noopener noreferrer"
-                          className="text-primary hover:underline"
+                          className="text-link hover:underline"
                         >
                           Order via WhatsApp
                         </a>
