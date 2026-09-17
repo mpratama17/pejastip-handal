@@ -132,8 +132,8 @@ function PaymentCard({
     <article className={`grid gap-5 rounded-lg border border-border bg-surface p-4 ${pending ? "md:grid-cols-[180px_1fr]" : "md:grid-cols-[96px_1fr]"}`}>
       <div>
         {!payment.proof_url ? (
-          <div className="flex aspect-[3/4] items-center justify-center rounded-md bg-surface-sunken text-xs text-ink-faint">
-            Tanpa file
+          <div className="flex aspect-[3/4] items-center justify-center rounded-md bg-surface-sunken p-2 text-center text-xs text-ink-faint">
+            {payment.proof_purged_at ? `Diarsipkan ${formatDateID(payment.proof_purged_at)}` : "Tanpa file"}
           </div>
         ) : !proofUrl ? (
           <div className="aspect-[3/4] animate-pulse rounded-md bg-surface-sunken" />
