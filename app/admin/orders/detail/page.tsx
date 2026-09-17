@@ -43,6 +43,7 @@ function OrderDetail() {
   const [discount, setDiscount] = useState({ amount: "0", note: "" });
   const [saving, setSaving] = useState(false);
   const [error, setError] = useState<string | null>(null);
+  const [notesError, setNotesError] = useState<string | null>(null);
 
   async function load() {
     if (!id) return;
@@ -71,7 +72,7 @@ function OrderDetail() {
   async function handleSaveNotes() {
     if (!order) return;
     setSaving(true);
-    setError(null);
+    setNotesError(null);
     const { error } = await supabase
       .from("orders")
       .update({
@@ -82,7 +83,7 @@ function OrderDetail() {
       .eq("id", order.id);
     setSaving(false);
     if (error) {
-      return setError(
+      return setNotesError(
         error.message.includes("orders_discount_le_subtotal") ? "Diskon tidak boleh melebihi subtotal." : `Gagal menyimpan: ${error.message}`,
       );
     }
@@ -218,6 +219,11 @@ function OrderDetail() {
         >
           {saving ? "Menyimpan…" : "Simpan"}
         </button>
+        {notesError && (
+          <p role="alert" className="mt-2 text-sm text-danger">
+            {notesError}
+          </p>
+        )}
       </div>
     </div>
   );
@@ -364,8 +370,8 @@ function ItemsSection({ order, items, onChanged }: { order: OrderRow; items: Ord
             {draft.map((d) => {
               const c = byId.get(d.event_item_id);
               const title = c?.books?.title ?? items.find((it) => it.event_item_id === d.event_item_id)?.event_items?.books?.title ?? "…";
-              const setQty = (qty: number) =>
-                setDraft(draft.map((x) => (x.event_item_id === d.event_item_id ? { ...x, qty: Math.max(1, qty) } : x)));
+              const setQty = (next: (qty: number) => number) =>
+                setDraft((prev) => prev.map((x) => (x.event_item_id === d.event_item_id ? { ...x, qty: Math.max(1, next(x.qty)) } : x)));
               return (
                 <li key={d.event_item_id} className="flex flex-wrap items-center justify-between gap-3 py-2 text-sm">
                   <span className="min-w-0 flex-1">
@@ -373,7 +379,7 @@ function ItemsSection({ order, items, onChanged }: { order: OrderRow; items: Ord
                     <span className="ml-2 text-xs tabular-nums text-ink-faint">{formatIDR(priceOf(d.event_item_id))}</span>
                   </span>
                   <span className="flex items-center gap-1">
-                    <button type="button" aria-label={`Kurangi ${title}`} onClick={() => setQty(d.qty - 1)} className="h-8 w-8 rounded-sm border border-border hover:bg-surface-sunken">
+                    <button type="button" aria-label={`Kurangi ${title}`} onClick={() => setQty((q) => q - 1)} className="h-8 w-8 rounded-sm border border-border hover:bg-surface-sunken">
                       −
                     </button>
                     <input
@@ -381,15 +387,15 @@ function ItemsSection({ order, items, onChanged }: { order: OrderRow; items: Ord
                       type="number"
                       min={1}
                       value={d.qty}
-                      onChange={(e) => setQty(Number(e.target.value) || 1)}
+                      onChange={(e) => setQty(() => Number(e.target.value) || 1)}
                       className="h-8 w-14 rounded-sm border border-border text-center tabular-nums"
                     />
-                    <button type="button" aria-label={`Tambah ${title}`} onClick={() => setQty(d.qty + 1)} className="h-8 w-8 rounded-sm border border-border hover:bg-surface-sunken">
+                    <button type="button" aria-label={`Tambah ${title}`} onClick={() => setQty((q) => q + 1)} className="h-8 w-8 rounded-sm border border-border hover:bg-surface-sunken">
                       +
                     </button>
                     <button
                       type="button"
-                      onClick={() => setDraft(draft.filter((x) => x.event_item_id !== d.event_item_id))}
+                      onClick={() => setDraft((prev) => prev.filter((x) => x.event_item_id !== d.event_item_id))}
                       className="ml-2 rounded-sm px-2 py-1 text-sm text-danger hover:bg-danger-soft"
                     >
                       Hapus
@@ -419,7 +425,7 @@ function ItemsSection({ order, items, onChanged }: { order: OrderRow; items: Ord
               type="button"
               disabled={!adding}
               onClick={() => {
-                setDraft([...draft, { event_item_id: adding, qty: 1 }]);
+                setDraft((prev) => [...prev, { event_item_id: adding, qty: 1 }]);
                 setAdding("");
               }}
               className="rounded-md border border-primary px-3 py-2 text-sm font-semibold text-primary hover:bg-primary-soft disabled:opacity-40"
