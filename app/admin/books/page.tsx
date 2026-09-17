@@ -5,12 +5,15 @@ import { supabase } from "@/lib/supabase/client";
 import { formatIDR } from "@/lib/format";
 import { parseSimpleCSV } from "@/lib/csv";
 import { BOOK_FORMAT_LABEL } from "@/lib/labels";
+import { compressImage } from "@/lib/compress-image";
+import { BookCover } from "@/components/public/book-cover";
 import type { Database } from "@/types/database";
 
 type EventRow = Database["public"]["Tables"]["events"]["Row"];
 type BookFormat = Database["public"]["Enums"]["book_format"];
+type BookRow = Database["public"]["Tables"]["books"]["Row"];
 type EventItemWithBook = Database["public"]["Tables"]["event_items"]["Row"] & {
-  books: Database["public"]["Tables"]["books"]["Row"];
+  books: BookRow;
 };
 type ImportResult = Database["public"]["Functions"]["import_catalog_csv"]["Returns"][number];
 
@@ -260,6 +263,7 @@ export default function AdminBooksPage() {
             <table className="w-full text-sm">
               <thead className="bg-surface-sunken text-left text-ink-muted">
                 <tr>
+                  <th className="px-4 py-2 font-medium">Sampul</th>
                   <th className="px-4 py-2 font-medium">Judul</th>
                   <th className="px-4 py-2 font-medium">Penulis</th>
                   <th className="px-4 py-2 font-medium">Format</th>
@@ -271,6 +275,9 @@ export default function AdminBooksPage() {
               <tbody>
                 {items.map((item) => (
                   <tr key={item.id} className="border-t-1 border-line">
+                    <td className="px-4 py-2">
+                      <CoverCell book={item.books} onChanged={() => loadItems(eventId)} />
+                    </td>
                     <td className="px-4 py-2 font-medium text-ink">{item.books.title}</td>
                     <td className="px-4 py-2 text-ink-muted">{item.books.author ?? "—"}</td>
                     <td className="px-4 py-2 text-ink-muted">{BOOK_FORMAT_LABEL[item.books.format]}</td>
@@ -290,7 +297,7 @@ export default function AdminBooksPage() {
                 ))}
                 {items.length === 0 && (
                   <tr>
-                    <td colSpan={6} className="px-4 py-6 text-center text-ink-faint">
+                    <td colSpan={7} className="px-4 py-6 text-center text-ink-faint">
                       Belum ada buku di event ini.
                     </td>
                   </tr>
@@ -300,6 +307,56 @@ export default function AdminBooksPage() {
           </div>
         </>
       )}
+    </div>
+  );
+}
+
+// Unggah sampul ke bucket publik `book-covers` lalu simpan URL-nya di books.
+// Buku tanpa sampul tetap memakai sampul generatif (docs/04 §6).
+function CoverCell({ book, onChanged }: { book: BookRow; onChanged: () => void }) {
+  const [busy, setBusy] = useState(false);
+  const [error, setError] = useState<string | null>(null);
+
+  async function upload(file: File) {
+    if (!file.type.startsWith("image/")) return setError("File harus gambar.");
+    setBusy(true);
+    setError(null);
+    const small = await compressImage(file);
+    const ext = small.type === "image/webp" ? "webp" : small.type === "image/png" ? "png" : "jpg";
+    const path = `${book.id}.${ext}`;
+    const up = await supabase.storage.from("book-covers").upload(path, small, { upsert: true, contentType: small.type });
+    if (up.error) {
+      setBusy(false);
+      return setError(up.error.message);
+    }
+    // Path selalu sama per buku → tambahkan penanda versi supaya cache CDN/browser ikut berganti.
+    const url = `${supabase.storage.from("book-covers").getPublicUrl(path).data.publicUrl}?v=${Date.now()}`;
+    const { error } = await supabase.from("books").update({ cover_url: url }).eq("id", book.id);
+    setBusy(false);
+    if (error) return setError(error.message);
+    onChanged();
+  }
+
+  return (
+    <div className="flex items-center gap-2">
+      <div className="w-10 shrink-0">
+        <BookCover compact title={book.title} coverUrl={book.cover_url} />
+      </div>
+      <label className="cursor-pointer text-xs font-semibold text-link hover:underline">
+        {busy ? "Mengunggah…" : book.cover_url ? "Ganti" : "Unggah"}
+        <input
+          type="file"
+          accept="image/jpeg,image/png,image/webp"
+          disabled={busy}
+          className="sr-only"
+          onChange={(e) => {
+            const f = e.target.files?.[0];
+            e.target.value = "";
+            if (f) upload(f);
+          }}
+        />
+      </label>
+      {error && <span className="text-xs text-danger">{error}</span>}
     </div>
   );
 }

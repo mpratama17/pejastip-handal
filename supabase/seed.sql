@@ -24,6 +24,8 @@ insert into events (id, name, type, status, dp_percent, payment_due_hours, eta_n
 -- order form, tapi tetap tampil di /ongoing.
 
 -- Sampul contoh ada di public/books/ (tidak ikut repo — karya penerbit).
+-- Di project Supabase, sampul sudah dipindah ke bucket publik `book-covers`
+-- lewat tombol Unggah di /admin/books; seed ini memakai path lokal saja.
 insert into books (id, isbn, title, author, format, cover_url) values
   ('20000000-0000-0000-0000-000000000001', '9780000000011', 'Atomic Habits', 'James Clear', 'paperback', '/books/atomic-habits.jpg'),
   ('20000000-0000-0000-0000-000000000002', '9780000000028', 'Filosofi Teras', 'Henry Manampiring', 'hardcover', '/books/filosofi-teras.jpg'),
