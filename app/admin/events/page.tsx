@@ -107,7 +107,7 @@ export default function AdminEventsPage() {
   return (
     <div>
       <div className="flex items-center justify-between">
-        <h1 className="font-display text-xl font-semibold text-ink">Event</h1>
+        <h1 className="font-display text-xl font-bold text-ink">Event</h1>
         {editing !== "new" && (
           <button
             onClick={() => setEditing("new")}
@@ -138,7 +138,7 @@ export default function AdminEventsPage() {
 
       <div className="mt-6 overflow-x-auto rounded-lg border border-border">
         <table className="w-full text-sm">
-          <thead className="bg-surface-sunken text-left text-ink-muted">
+          <thead className="border-b border-ink bg-surface-sunken text-left">
             <tr>
               <th className="px-4 py-2 font-medium">Nama</th>
               <th className="px-4 py-2 font-medium">Status</th>
@@ -282,7 +282,7 @@ function EventForm({
 
   return (
     <form onSubmit={handleSubmit} className={`${eventId ? "bg-primary-soft/40 p-4" : "mt-4 rounded-lg border border-border bg-surface p-5"}`}>
-      {!eventId && <h2 className="font-display text-lg font-semibold text-ink">Event baru</h2>}
+      {!eventId && <h2 className="font-display text-lg font-bold text-ink">Event baru</h2>}
       <div className="mt-2 grid gap-4 sm:grid-cols-2">
         <label className="block text-sm font-medium text-ink sm:col-span-2">
           Nama event

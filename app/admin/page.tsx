@@ -59,7 +59,7 @@ export default function AdminDashboardPage() {
 
   return (
     <div>
-      <h1 className="font-display text-xl font-semibold text-ink">Dashboard</h1>
+      <h1 className="font-display text-xl font-bold text-ink">Dashboard</h1>
 
       <div className="mt-6 grid grid-cols-2 gap-4 lg:grid-cols-4">
         <StatCard label="Order baru" value={stats?.newOrders} href="/admin/orders" />
@@ -79,7 +79,7 @@ export default function AdminDashboardPage() {
         </div>
         <div className="mt-3 overflow-x-auto rounded-lg border border-border">
           <table className="w-full text-sm">
-            <thead className="bg-surface-sunken text-left text-ink-muted">
+            <thead className="border-b border-ink bg-surface-sunken text-left">
               <tr>
                 <th className="px-4 py-2 font-medium">Kode</th>
                 <th className="px-4 py-2 font-medium">Customer</th>
@@ -119,9 +119,9 @@ export default function AdminDashboardPage() {
 
 function StatCard({ label, value, href }: { label: string; value: string | number | undefined; href: string }) {
   return (
-    <Link href={href} className="press rounded-lg border border-border bg-surface p-4">
+    <Link href={href} className="card press stat p-4">
       <p className="text-xs font-medium text-ink-muted">{label}</p>
-      <p className="mt-1 font-display text-2xl font-semibold text-ink">{value ?? "…"}</p>
+      <p className="mt-1 font-display text-2xl font-extrabold text-ink">{value ?? "…"}</p>
     </Link>
   );
 }

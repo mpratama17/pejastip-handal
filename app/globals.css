@@ -181,10 +181,10 @@
   border-radius: var(--radius-lg);
 }
 
-/* Admin (§8): garis lebih tipis, bayangan hanya di tombol primer. */
+/* Admin (§8): garis lebih tipis, bayangan hanya di tombol primer & stat card. */
 @utility admin-theme {
   --bw: 1.5px;
-  & .press:not(.btn-primary) {
+  & .press:not(.btn-primary):not(.stat) {
     box-shadow: none;
     transform: none;
   }

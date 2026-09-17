@@ -158,7 +158,7 @@ export default function AdminNewOrderPage() {
       <Link href="/admin/orders" className="text-sm text-ink-muted hover:text-ink">
         ← Order
       </Link>
-      <h1 className="mt-2 font-display text-xl font-semibold text-ink">Order manual</h1>
+      <h1 className="mt-2 font-display text-xl font-bold text-ink">Order manual</h1>
       <p className="mt-1 text-sm text-ink-muted">Untuk order yang masuk lewat WhatsApp, termasuk batch tanpa katalog.</p>
 
       <section className="mt-6 grid gap-4 rounded-lg border border-border bg-surface p-5 sm:grid-cols-2">
@@ -274,7 +274,7 @@ export default function AdminNewOrderPage() {
 
         <p className="mt-4 flex justify-between border-t-1 border-line pt-3 text-sm">
           <span className="text-ink-muted">Subtotal</span>
-          <span className="font-display text-lg font-semibold tabular-nums">{formatIDR(subtotal)}</span>
+          <span className="font-display text-lg font-bold tabular-nums">{formatIDR(subtotal)}</span>
         </p>
       </section>
 

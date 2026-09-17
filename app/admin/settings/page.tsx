@@ -70,7 +70,7 @@ export default function AdminSettingsPage() {
 
   return (
     <div className="max-w-3xl">
-      <h1 className="font-display text-xl font-semibold text-ink">Pengaturan</h1>
+      <h1 className="font-display text-xl font-bold text-ink">Pengaturan</h1>
       <p className="mt-1 text-sm text-ink-muted">Semua yang tampil ke customer. Tiap bagian disimpan sendiri-sendiri.</p>
 
       <Section
@@ -266,7 +266,7 @@ function Section({
 
   return (
     <section className="mt-6 rounded-lg border border-border bg-surface p-5">
-      <h2 className="font-display text-lg font-semibold text-ink">{title}</h2>
+      <h2 className="font-display text-lg font-bold text-ink">{title}</h2>
       <div className="mt-4 flex flex-col gap-4">{children}</div>
       <div className="mt-5 flex items-center gap-3 border-t-1 border-line pt-4">
         <button

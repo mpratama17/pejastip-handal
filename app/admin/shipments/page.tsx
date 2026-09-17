@@ -46,14 +46,14 @@ export default function AdminShipmentsPage() {
 
   return (
     <div>
-      <h1 className="font-display text-xl font-semibold text-ink">Pengiriman</h1>
+      <h1 className="font-display text-xl font-bold text-ink">Pengiriman</h1>
 
       <div className="mt-4 flex gap-1 rounded-md bg-surface-sunken p-1 text-sm sm:inline-flex">
         {TABS.map((t) => (
           <button
             key={t.key}
             onClick={() => setTab(t.key)}
-            className={`flex-1 whitespace-nowrap rounded-sm px-4 py-1.5 font-medium ${tab === t.key ? "bg-surface text-ink shadow-sm" : "text-ink-muted"}`}
+            className={`flex-1 whitespace-nowrap rounded-full px-4 py-1.5 font-semibold ${tab === t.key ? "border border-ink bg-primary text-ink" : "border border-transparent text-ink-muted hover:text-ink"}`}
           >
             {t.label}
           </button>

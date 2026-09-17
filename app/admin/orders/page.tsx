@@ -63,7 +63,7 @@ export default function AdminOrdersPage() {
   return (
     <div>
       <div className="flex items-center justify-between">
-        <h1 className="font-display text-xl font-semibold text-ink">Order</h1>
+        <h1 className="font-display text-xl font-bold text-ink">Order</h1>
         <Link href="/admin/orders/new" className="btn btn-primary press px-4 py-2 text-sm font-semibold">
           + Order Manual
         </Link>
@@ -103,7 +103,7 @@ export default function AdminOrdersPage() {
 
       <div className="mt-4 overflow-x-auto rounded-lg border border-border">
         <table className="w-full text-sm">
-          <thead className="bg-surface-sunken text-left text-ink-muted">
+          <thead className="border-b border-ink bg-surface-sunken text-left">
             <tr>
               <th className="px-4 py-2 font-medium">Kode</th>
               <th className="px-4 py-2 font-medium">Customer</th>

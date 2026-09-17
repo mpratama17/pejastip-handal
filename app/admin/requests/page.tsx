@@ -42,7 +42,7 @@ export default function AdminRequestsPage() {
   return (
     <div>
       <div className="flex flex-wrap items-center justify-between gap-3">
-        <h1 className="font-display text-xl font-semibold text-ink">Request buku</h1>
+        <h1 className="font-display text-xl font-bold text-ink">Request buku</h1>
         <label className="flex items-center gap-2 text-sm text-ink-muted">
           <input type="checkbox" checked={showClosed} onChange={(e) => setShowClosed(e.target.checked)} />
           Tampilkan yang sudah selesai
@@ -51,7 +51,7 @@ export default function AdminRequestsPage() {
 
       <div className="mt-4 overflow-x-auto rounded-lg border border-border">
         <table className="w-full text-sm">
-          <thead className="bg-surface-sunken text-left text-ink-muted">
+          <thead className="border-b border-ink bg-surface-sunken text-left">
             <tr>
               <th className="px-4 py-2 font-medium">Judul</th>
               <th className="px-4 py-2 font-medium">ISBN · Format</th>
