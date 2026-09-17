@@ -1,0 +1,216 @@
+"use client";
+
+import { Suspense, useCallback, useEffect, useState } from "react";
+import Link from "next/link";
+import { useRouter, useSearchParams } from "next/navigation";
+import { supabase } from "@/lib/supabase/client";
+import { formatIDR, formatDateID } from "@/lib/format";
+import { useSiteSettings, waLink } from "@/lib/site-settings";
+import { StatusChip } from "@/components/status-chip";
+import { PaymentProofUpload } from "@/components/public/payment-proof-upload";
+import type { Database } from "@/types/database";
+
+type TrackerRow = Database["public"]["Functions"]["get_tracker"]["Returns"][number];
+type TrackerItem = {
+  title: string;
+  qty: number;
+  shipping_status: string;
+  courier: string | null;
+  tracking_number: string | null;
+};
+
+export default function TrackPage() {
+  return (
+    <Suspense fallback={null}>
+      <Tracker />
+    </Suspense>
+  );
+}
+
+function Tracker() {
+  const router = useRouter();
+  const params = useSearchParams();
+  const settings = useSiteSettings();
+  const urlCode = params.get("code")?.trim().toUpperCase() ?? "";
+
+  const [input, setInput] = useState(urlCode);
+  const [orders, setOrders] = useState<TrackerRow[] | null>(null);
+  const [loading, setLoading] = useState(false);
+  const [error, setError] = useState<string | null>(null);
+  const [uploadFor, setUploadFor] = useState<string | null>(null);
+
+  const lookup = useCallback(async (code: string) => {
+    setLoading(true);
+    setError(null);
+    const { data, error } = await supabase.rpc("get_tracker", { p_code: code });
+    setLoading(false);
+    if (error) {
+      setOrders(null);
+      setError(error.code === "P0001" ? error.message : "Gagal memuat. Periksa koneksi lalu coba lagi.");
+      return;
+    }
+    setOrders(data ?? []);
+  }, []);
+
+  // Kode di URL = sumber kebenaran → bisa dibagikan/di-bookmark.
+  useEffect(() => {
+    setInput(urlCode);
+    if (urlCode) lookup(urlCode);
+    else setOrders(null);
+  }, [urlCode, lookup]);
+
+  function handleSubmit(e: React.FormEvent) {
+    e.preventDefault();
+    const code = input.trim().toUpperCase();
+    if (!code) return;
+    if (code === urlCode) lookup(code);
+    else router.replace(`/track?code=${code}`, { scroll: false });
+  }
+
+  return (
+    <div className="mx-auto max-w-2xl px-4 py-10">
+      <h1 className="font-display text-3xl font-semibold">Lacak order</h1>
+      <p className="mt-1 text-sm text-ink-muted">Masukkan kode pelacakan yang muncul setelah kamu order.</p>
+
+      <form onSubmit={handleSubmit} className="mt-6 flex flex-col gap-3 rounded-lg border border-border bg-surface p-5 sm:flex-row">
+        <label className="flex-1">
+          <span className="sr-only">Kode pelacakan</span>
+          <input
+            required
+            value={input}
+            onChange={(e) => setInput(e.target.value)}
+            placeholder="Contoh: VNGB3554"
+            autoCapitalize="characters"
+            autoComplete="off"
+            spellCheck={false}
+            className="w-full rounded-md border border-border px-3 py-3 font-display text-lg uppercase tracking-wider placeholder:font-sans placeholder:text-sm placeholder:normal-case placeholder:tracking-normal focus:border-primary focus:outline-none focus:ring-2 focus:ring-primary/30"
+          />
+        </label>
+        <button
+          type="submit"
+          disabled={loading}
+          className="rounded-md bg-primary px-6 py-3 text-sm font-semibold text-white hover:bg-primary-hover disabled:opacity-60"
+        >
+          {loading ? "Mencari…" : "Lacak"}
+        </button>
+      </form>
+
+      {error && (
+        <div className="mt-4 rounded-lg border border-danger/30 bg-danger-soft p-4 text-sm text-danger" role="alert">
+          {error}
+          {settings?.wa_admin_number && (
+            <a
+              href={waLink(settings.wa_admin_number, "Halo Admin, saya lupa kode pelacakan order saya.")}
+              target="_blank"
+              rel="noopener noreferrer"
+              className="mt-1 block font-semibold underline underline-offset-2"
+            >
+              Lupa kode? Chat admin
+            </a>
+          )}
+        </div>
+      )}
+
+      {orders?.length === 0 && (
+        <div className="mt-6 rounded-lg border border-border bg-surface p-8 text-center">
+          <p className="font-medium">Belum ada order aktif untuk kode ini.</p>
+          <Link href="/ongoing" className="mt-2 inline-block text-sm font-medium text-primary hover:underline">
+            Lihat batch yang sedang buka
+          </Link>
+        </div>
+      )}
+
+      <div className="mt-6 flex flex-col gap-4">
+        {orders?.map((o) => {
+          const items = (o.items as unknown as TrackerItem[]) ?? [];
+          const owes = o.balance_idr > 0;
+          return (
+            <article key={o.order_id} className="rounded-lg border border-border bg-surface p-5 sm:p-6">
+              <header className="flex items-start justify-between gap-3">
+                <div>
+                  <h2 className="font-display text-xl font-semibold">{o.order_code}</h2>
+                  <p className="text-sm text-ink-muted">
+                    {o.event_name} · {formatDateID(o.created_at)}
+                  </p>
+                </div>
+                <StatusChip kind="payment" status={o.payment_state} />
+              </header>
+
+              <dl className="mt-4 grid grid-cols-3 gap-2 rounded-md bg-surface-sunken p-3 text-sm">
+                <div>
+                  <dt className="text-xs text-ink-muted">Total</dt>
+                  <dd className="tabular-nums">{formatIDR(o.total_idr)}</dd>
+                </div>
+                <div>
+                  <dt className="text-xs text-ink-muted">Terbayar</dt>
+                  <dd className="tabular-nums">{formatIDR(o.paid_idr)}</dd>
+                </div>
+                <div>
+                  <dt className="text-xs text-ink-muted">Sisa tagihan</dt>
+                  <dd className={`font-display text-lg font-semibold tabular-nums ${owes ? "text-accent" : "text-success"}`}>
+                    {formatIDR(o.balance_idr)}
+                  </dd>
+                </div>
+              </dl>
+
+              <ul className="mt-4 divide-y divide-border">
+                {items.map((it, i) => (
+                  <li key={i} className="flex items-start justify-between gap-3 py-2.5 text-sm">
+                    <div>
+                      <p>
+                        {it.title} <span className="text-ink-muted">× {it.qty}</span>
+                      </p>
+                      {it.tracking_number && (
+                        <p className="mt-0.5 text-xs text-ink-muted">
+                          Resi {it.courier}: <span className="font-semibold tabular-nums text-ink">{it.tracking_number}</span>
+                        </p>
+                      )}
+                    </div>
+                    <StatusChip kind="shipping" status={it.shipping_status} />
+                  </li>
+                ))}
+              </ul>
+
+              {o.admin_notes && (
+                <div className="mt-3 rounded-md border-l-2 border-primary bg-primary-soft/50 p-3 text-sm">
+                  <p className="text-xs font-semibold text-primary">Catatan admin</p>
+                  <p className="mt-0.5 whitespace-pre-line">{o.admin_notes}</p>
+                </div>
+              )}
+
+              {owes && (
+                <div className="mt-4 border-t border-border pt-4">
+                  {uploadFor === o.order_id ? (
+                    <PaymentProofUpload
+                      orderId={o.order_id}
+                      orderCode={o.order_code}
+                      customerCode={urlCode}
+                      defaultAmount={o.balance_idr}
+                    />
+                  ) : (
+                    <button
+                      type="button"
+                      onClick={() => setUploadFor(o.order_id)}
+                      className="text-sm font-semibold text-primary hover:underline"
+                    >
+                      Upload bukti pembayaran
+                    </button>
+                  )}
+                </div>
+              )}
+            </article>
+          );
+        })}
+      </div>
+
+      {orders && orders.length > 0 && (
+        <p className="mt-6 text-center text-sm text-ink-muted">
+          Buku sudah tiba dan lunas?{" "}
+          <Link href={`/shipping?code=${urlCode}`} className="font-medium text-primary hover:underline">
+            Isi Form Kirim
+          </Link>
+        </p>
+      )}
+    </div>
+  );
+}

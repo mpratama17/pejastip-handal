@@ -44,6 +44,7 @@ export type Database = {
           created_at: string
           customer_id: string | null
           customer_name: string
+          format: Database["public"]["Enums"]["book_format"] | null
           id: string
           isbn: string | null
           notes: string | null
@@ -55,6 +56,7 @@ export type Database = {
           created_at?: string
           customer_id?: string | null
           customer_name: string
+          format?: Database["public"]["Enums"]["book_format"] | null
           id?: string
           isbn?: string | null
           notes?: string | null
@@ -66,6 +68,7 @@ export type Database = {
           created_at?: string
           customer_id?: string | null
           customer_name?: string
+          format?: Database["public"]["Enums"]["book_format"] | null
           id?: string
           isbn?: string | null
           notes?: string | null
@@ -570,9 +573,19 @@ export type Database = {
         }
         Returns: boolean
       }
+      create_book_request: {
+        Args: {
+          p_customer_name: string
+          p_format: Database["public"]["Enums"]["book_format"]
+          p_isbn: string
+          p_notes: string
+          p_title: string
+          p_whatsapp: string
+        }
+        Returns: string
+      }
       create_order: {
         Args: {
-          p_client_ip?: string
           p_customer_notes: string
           p_event_id: string
           p_full_name: string
@@ -596,8 +609,31 @@ export type Database = {
         }[]
       }
       generate_customer_code: { Args: never; Returns: string }
+      get_bestsellers: {
+        Args: { p_limit?: number }
+        Returns: {
+          author: string
+          book_id: string
+          cover_url: string
+          sold: number
+          title: string
+        }[]
+      }
+      get_catalogue: {
+        Args: { p_event_id: string }
+        Returns: {
+          author: string
+          cover_url: string
+          event_item_id: string
+          format: Database["public"]["Enums"]["book_format"]
+          isbn: string
+          price_idr: number
+          stock_left: number
+          title: string
+        }[]
+      }
       get_tracker: {
-        Args: { p_client_ip?: string; p_code: string }
+        Args: { p_code: string }
         Returns: {
           admin_notes: string
           balance_idr: number
@@ -622,10 +658,10 @@ export type Database = {
         }[]
       }
       normalize_whatsapp: { Args: { p_input: string }; Returns: string }
+      request_ip: { Args: never; Returns: string }
       submit_payment_proof: {
         Args: {
           p_amount_idr: number
-          p_client_ip?: string
           p_customer_code: string
           p_method: Database["public"]["Enums"]["payment_method"]
           p_order_code: string

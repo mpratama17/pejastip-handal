@@ -82,6 +82,12 @@
   --font-sans: var(--font-inter);
 }
 
+/* `bg-cover` sudah dipakai Tailwind untuk background-size, jadi token warna
+   --color-cover butuh nama utility sendiri. */
+@utility bg-jacket {
+  background-color: var(--color-cover);
+}
+
 /* MVP light mode saja (docs/04 §1) — dark mode belum dibangun. */
 
 body {
