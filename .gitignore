@@ -48,3 +48,8 @@ supabase/.temp
 # secrets (lihat CLAUDE.md root Porto — cek ulang sebelum push)
 client_secret*.json
 *.env.local
+
+# dokumen internal (brief, PRD, instruksi & output AI) — hanya lokal, tidak di repo publik
+*.md
+.claude/
+Claude outputs/
