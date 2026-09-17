@@ -5,6 +5,7 @@ import { useSearchParams } from "next/navigation";
 import { supabase } from "@/lib/supabase/client";
 import { StatusChip, SHIPPING_STATUS_MAP } from "@/components/status-chip";
 import { formatIDR, formatDateID } from "@/lib/format";
+import { waLink } from "@/lib/site-settings";
 import type { Database } from "@/types/database";
 
 type OrderRow = Database["public"]["Tables"]["orders"]["Row"] & {
@@ -121,6 +122,19 @@ function OrderDetail() {
           </p>
         </div>
         <div className="flex items-center gap-2">
+          {order.customers && (
+            <button
+              type="button"
+              onClick={() => {
+                const c = order.customers!;
+                const text = `Halo ${c.full_name}, order ${order.order_code} sudah kami catat. Kode pelacakanmu: ${c.code}. Cek status & upload bukti transfer di ${window.location.origin}/track?code=${c.code}`;
+                window.open(waLink(c.whatsapp, text), "_blank", "noopener");
+              }}
+              className="rounded-md border border-border px-3 py-1.5 text-xs font-semibold hover:bg-surface-sunken"
+            >
+              Kirim kode via WA
+            </button>
+          )}
           <StatusChip kind="order" status={order.status} />
           {paymentState && <StatusChip kind="payment" status={paymentState.payment_state ?? "not_paid"} />}
         </div>
