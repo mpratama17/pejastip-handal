@@ -24,10 +24,10 @@ export function SiteFooter() {
 
         <div>
           <p className="text-sm font-semibold">Tautan</p>
-          <ul className="mt-3 flex flex-col gap-2 text-sm text-bg/75">
+          <ul className="mt-2 flex flex-col gap-1 text-sm text-bg/75">
             {QUICK_LINKS.map((l) => (
               <li key={l.href}>
-                <Link href={l.href} className="hover:text-bg hover:underline">
+                <Link href={l.href} className="inline-block py-1 hover:text-bg hover:underline">
                   {l.label}
                 </Link>
               </li>
@@ -37,17 +37,17 @@ export function SiteFooter() {
 
         <div>
           <p className="text-sm font-semibold">Hubungi kami</p>
-          <ul className="mt-3 flex flex-col gap-2 text-sm text-bg/75">
+          <ul className="mt-2 flex flex-col gap-1 text-sm text-bg/75">
             {s?.wa_admin_number && (
               <li>
-                <a href={waLink(s.wa_admin_number)} target="_blank" rel="noopener noreferrer" className="hover:text-bg hover:underline">
+                <a href={waLink(s.wa_admin_number)} target="_blank" rel="noopener noreferrer" className="inline-block py-1 hover:text-bg hover:underline">
                   WhatsApp admin
                 </a>
               </li>
             )}
             {s?.wa_group_link && (
               <li>
-                <a href={s.wa_group_link} target="_blank" rel="noopener noreferrer" className="hover:text-bg hover:underline">
+                <a href={s.wa_group_link} target="_blank" rel="noopener noreferrer" className="inline-block py-1 hover:text-bg hover:underline">
                   Grup WhatsApp
                 </a>
               </li>
@@ -58,7 +58,7 @@ export function SiteFooter() {
                   href={`https://instagram.com/${s.instagram_handle.replace(/^@/, "")}`}
                   target="_blank"
                   rel="noopener noreferrer"
-                  className="hover:text-bg hover:underline"
+                  className="inline-block py-1 hover:text-bg hover:underline"
                 >
                   Instagram @{s.instagram_handle.replace(/^@/, "")}
                 </a>
