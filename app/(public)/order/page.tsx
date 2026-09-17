@@ -444,6 +444,7 @@ function QtyStepper({
 function OrderSuccess({ result }: { result: OrderResult }) {
   const [copied, setCopied] = useState<string | null>(null);
   const banks = (result.bank_accounts as unknown as BankAccount[]) ?? [];
+  const code = result.customer_code as string | null;
 
   function copy(text: string) {
     navigator.clipboard.writeText(text).then(() => {
@@ -455,15 +456,29 @@ function OrderSuccess({ result }: { result: OrderResult }) {
   return (
     <div className="mx-auto max-w-2xl px-4 py-10">
       <div className="rounded-lg bg-jacket p-6 text-center text-bg sm:p-8">
-        <p className="text-sm text-bg/75">Order {result.order_code} tercatat. Kode pelacakanmu:</p>
-        <button
-          type="button"
-          onClick={() => copy(result.customer_code)}
-          className="mt-2 font-display text-4xl font-semibold italic tracking-wide hover:opacity-90"
-        >
-          {result.customer_code}
-        </button>
-        <p className="mt-1 text-xs text-bg/60">{copied === result.customer_code ? "Tersalin" : "Ketuk untuk menyalin · simpan kode ini"}</p>
+        {code ? (
+          <>
+            <p className="text-sm text-bg/75">Order {result.order_code} tercatat. Kode pelacakanmu:</p>
+            <button
+              type="button"
+              onClick={() => copy(code)}
+              className="mt-2 font-display text-4xl font-semibold italic tracking-wide hover:opacity-90"
+            >
+              {code}
+            </button>
+            <p className="mt-1 text-xs text-bg/60">{copied === code ? "Tersalin" : "Ketuk untuk menyalin · simpan kode ini"}</p>
+          </>
+        ) : (
+          // Nomor WA sudah terdaftar: kode lama tidak ditampilkan ke siapa pun
+          // yang sekadar tahu nomornya (kode = kunci Lacak Order & Form Kirim).
+          <>
+            <p className="font-display text-3xl font-semibold italic">Order {result.order_code} tercatat</p>
+            <p className="mx-auto mt-2 max-w-md text-sm text-bg/75">
+              Nomor WhatsApp ini sudah terdaftar. Order baru masuk ke kode pelacakan yang sudah kamu punya — pakai kode itu
+              di Lacak Order untuk upload bukti transfer. Lupa kode? Chat admin.
+            </p>
+          </>
+        )}
       </div>
 
       <div className="mt-4 rounded-lg border border-border bg-surface p-5 sm:p-6">
@@ -495,24 +510,28 @@ function OrderSuccess({ result }: { result: OrderResult }) {
       </div>
 
       <div className="mt-4 rounded-lg border border-border bg-surface p-5 sm:p-6">
-        <h2 className="font-display text-xl font-semibold">Upload bukti transfer</h2>
-        <div className="mt-4">
-          <PaymentProofUpload
-            orderId={result.order_id}
-            orderCode={result.order_code}
-            customerCode={result.customer_code}
-            defaultAmount={result.nominal_due_idr}
-          />
-        </div>
+        {code && (
+          <>
+            <h2 className="font-display text-xl font-semibold">Upload bukti transfer</h2>
+            <div className="mt-4">
+              <PaymentProofUpload
+                orderId={result.order_id}
+                orderCode={result.order_code}
+                customerCode={code}
+                defaultAmount={result.nominal_due_idr}
+              />
+            </div>
+          </>
+        )}
 
         <a
           href={waLink(
             result.wa_admin_number,
-            `Halo Admin, saya sudah order ${result.order_code} (kode ${result.customer_code}) dan transfer ${formatIDR(result.nominal_due_idr)}.`,
+            `Halo Admin, saya sudah order ${result.order_code} ${code ? `(kode ${code}) ` : ""}dan transfer ${formatIDR(result.nominal_due_idr)}.`,
           )}
           target="_blank"
           rel="noopener noreferrer"
-          className="mt-6 block rounded-md bg-[#25D366] px-4 py-3 text-center text-sm font-semibold text-[#0b3b22] hover:brightness-95"
+          className={`${code ? "mt-6" : ""} block rounded-md bg-[#25D366] px-4 py-3 text-center text-sm font-semibold text-[#0b3b22] hover:brightness-95`}
         >
           Konfirmasi via WhatsApp
         </a>
@@ -520,7 +539,7 @@ function OrderSuccess({ result }: { result: OrderResult }) {
       </div>
 
       <p className="mt-6 text-center text-sm">
-        <Link href={`/track?code=${result.customer_code}`} className="font-medium text-primary hover:underline">
+        <Link href={code ? `/track?code=${code}` : "/track"} className="font-medium text-primary hover:underline">
           Lihat status order di Lacak Order
         </Link>
       </p>

@@ -718,6 +718,7 @@ export type Database = {
         Returns: boolean
       }
       normalize_whatsapp: { Args: { p_input: string }; Returns: string }
+      is_admin: { Args: never; Returns: boolean }
       request_ip: { Args: never; Returns: string }
       shipping_customer_id: {
         Args: { p_code: string; p_whatsapp: string }

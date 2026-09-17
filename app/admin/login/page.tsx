@@ -1,8 +1,9 @@
 "use client";
 
-import { useState } from "react";
+import { useEffect, useState } from "react";
 import { useRouter } from "next/navigation";
 import { supabase } from "@/lib/supabase/client";
+import { NOT_ADMIN_FLAG } from "@/lib/admin/use-admin-session";
 
 export default function AdminLoginPage() {
   const router = useRouter();
@@ -11,6 +12,13 @@ export default function AdminLoginPage() {
   const [error, setError] = useState<string | null>(null);
   const [loading, setLoading] = useState(false);
   const [googleLoading, setGoogleLoading] = useState(false);
+
+  useEffect(() => {
+    if (sessionStorage.getItem(NOT_ADMIN_FLAG)) {
+      sessionStorage.removeItem(NOT_ADMIN_FLAG);
+      setError("Akun ini tidak punya akses admin.");
+    }
+  }, []);
 
   async function handleSubmit(e: React.FormEvent) {
     e.preventDefault();
