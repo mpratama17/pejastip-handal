@@ -364,6 +364,8 @@ function ItemsSection({ order, items, onChanged }: { order: OrderRow; items: Ord
                           </option>
                         ))}
                       </select>
+                    ) : order.status === "cancelled" ? (
+                      <span className="text-ink-faint">—</span>
                     ) : (
                       <StatusChip kind="shipping" status={it.shipping_status} />
                     )}

@@ -131,7 +131,8 @@ function Tracker() {
         {orders?.map((o) => {
           const items = (o.items as unknown as TrackerItem[]) ?? [];
           const payments = (o.payments as unknown as TrackerPayment[]) ?? [];
-          const owes = o.balance_idr > 0;
+          const cancelled = o.order_status === "cancelled";
+          const owes = !cancelled && o.balance_idr > 0;
           return (
             <article key={o.order_id} className="rounded-lg border border-border bg-surface p-5 sm:p-6">
               <header className="flex items-start justify-between gap-3">
@@ -141,25 +142,54 @@ function Tracker() {
                     {o.event_name} · {formatDateID(o.created_at)}
                   </p>
                 </div>
-                <StatusChip kind="payment" status={o.payment_state} />
+                {cancelled || o.order_status === "completed" ? (
+                  <StatusChip kind="order" status={o.order_status} />
+                ) : (
+                  <StatusChip kind="payment" status={o.payment_state} />
+                )}
               </header>
 
-              <dl className="mt-4 grid grid-cols-3 gap-2 rounded-md bg-surface-sunken p-3 text-sm">
-                <div>
-                  <dt className="text-xs text-ink-muted">Total</dt>
-                  <dd className="tabular-nums">{formatIDR(o.total_idr)}</dd>
-                </div>
-                <div>
-                  <dt className="text-xs text-ink-muted">Terbayar</dt>
-                  <dd className="tabular-nums">{formatIDR(o.paid_idr)}</dd>
-                </div>
-                <div>
-                  <dt className="text-xs text-ink-muted">Sisa tagihan</dt>
-                  <dd className={`font-display text-lg font-semibold tabular-nums ${owes ? "text-accent" : "text-success"}`}>
-                    {formatIDR(o.balance_idr)}
-                  </dd>
-                </div>
-              </dl>
+              {cancelled ? (
+                <p className="mt-4 rounded-md bg-danger-soft p-3 text-sm text-danger">
+                  Order ini dibatalkan.
+                  {o.paid_idr > 0 && (
+                    <>
+                      {" "}Pembayaran {formatIDR(o.paid_idr)} akan diselesaikan admin
+                      {settings?.wa_admin_number && (
+                        <>
+                          {" "}—{" "}
+                          <a
+                            href={waLink(settings.wa_admin_number, `Halo Admin, order ${o.order_code} saya dibatalkan. Bagaimana dengan pembayaran saya?`)}
+                            target="_blank"
+                            rel="noopener noreferrer"
+                            className="font-semibold underline underline-offset-2"
+                          >
+                            chat admin
+                          </a>
+                        </>
+                      )}
+                      .
+                    </>
+                  )}
+                </p>
+              ) : (
+                <dl className="mt-4 grid grid-cols-3 gap-2 rounded-md bg-surface-sunken p-3 text-sm">
+                  <div>
+                    <dt className="text-xs text-ink-muted">Total</dt>
+                    <dd className="tabular-nums">{formatIDR(o.total_idr)}</dd>
+                  </div>
+                  <div>
+                    <dt className="text-xs text-ink-muted">Terbayar</dt>
+                    <dd className="tabular-nums">{formatIDR(o.paid_idr)}</dd>
+                  </div>
+                  <div>
+                    <dt className="text-xs text-ink-muted">Sisa tagihan</dt>
+                    <dd className={`font-display text-lg font-semibold tabular-nums ${owes ? "text-accent" : "text-success"}`}>
+                      {formatIDR(o.balance_idr)}
+                    </dd>
+                  </div>
+                </dl>
+              )}
 
               <ul className="mt-4 divide-y divide-border">
                 {items.map((it, i) => (
@@ -174,7 +204,7 @@ function Tracker() {
                         </p>
                       )}
                     </div>
-                    <StatusChip kind="shipping" status={it.shipping_status} />
+                    {!cancelled && <StatusChip kind="shipping" status={it.shipping_status} />}
                   </li>
                 ))}
               </ul>
@@ -236,7 +266,12 @@ function Tracker() {
         })}
       </div>
 
-      {orders && orders.length > 0 && (
+      {/* Ajakan Form Kirim hanya saat ada buku yang benar-benar menunggu dikirim. */}
+      {orders?.some(
+        (o) =>
+          o.order_status !== "cancelled" &&
+          ((o.items as unknown as TrackerItem[]) ?? []).some((it) => it.shipping_status === "arrived_in_indo"),
+      ) && (
         <p className="mt-6 text-center text-sm text-ink-muted">
           Buku sudah tiba dan lunas?{" "}
           <Link href={`/shipping?code=${urlCode}`} className="font-medium text-primary hover:underline">

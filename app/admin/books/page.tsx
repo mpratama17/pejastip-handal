@@ -4,6 +4,7 @@ import { useEffect, useState } from "react";
 import { supabase } from "@/lib/supabase/client";
 import { formatIDR } from "@/lib/format";
 import { parseSimpleCSV } from "@/lib/csv";
+import { BOOK_FORMAT_LABEL } from "@/lib/labels";
 import type { Database } from "@/types/database";
 
 type EventRow = Database["public"]["Tables"]["events"]["Row"];
@@ -223,7 +224,7 @@ export default function AdminBooksPage() {
               >
                 {FORMATS.map((f) => (
                   <option key={f} value={f}>
-                    {f}
+                    {BOOK_FORMAT_LABEL[f]}
                   </option>
                 ))}
               </select>
@@ -272,7 +273,7 @@ export default function AdminBooksPage() {
                   <tr key={item.id} className="border-t border-border">
                     <td className="px-4 py-2 font-medium text-ink">{item.books.title}</td>
                     <td className="px-4 py-2 text-ink-muted">{item.books.author ?? "—"}</td>
-                    <td className="px-4 py-2 text-ink-muted">{item.books.format}</td>
+                    <td className="px-4 py-2 text-ink-muted">{BOOK_FORMAT_LABEL[item.books.format]}</td>
                     <td className="px-4 py-2 text-right tabular-nums text-ink">{formatIDR(item.price_idr)}</td>
                     <td className="px-4 py-2 text-right tabular-nums text-ink">{item.stock ?? "∞"}</td>
                     <td className="px-4 py-2">
