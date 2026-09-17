@@ -1,0 +1,82 @@
+# Backup mingguan database (docs/05 §6) — free tier Supabase tidak punya backup.
+#
+# Repo ini PUBLIK dan artifact bisa diunduh siapa pun yang login GitHub, jadi
+# dump WAJIB dienkripsi (GPG AES256) sebelum diunggah.
+#
+# Secrets:
+#   SUPABASE_DB_URL    Connection string session pooler (port 5432), dari
+#                      Supabase → Connect. Berisi password DB; karakter khusus
+#                      di password harus di-percent-encode (mis. @ → %40).
+#   BACKUP_PASSPHRASE  Passphrase enkripsi. Simpan juga di password manager —
+#                      tanpa ini backup tidak bisa dibuka.
+#
+# Restore (latih sekali sebelum launch, docs/05 §6):
+#   gpg --decrypt backup-<tanggal>.tar.gz.gpg | tar xz
+#   psql "$TARGET_DB_URL" -f roles.sql -f schema.sql \
+#     -c 'SET session_replication_role = replica' -f data.sql
+#
+# ponytail: file bukti transfer (Storage) belum ikut; tambahkan saat ada
+# service key khusus backup.
+name: backup
+
+on:
+  schedule:
+    - cron: "41 19 * * 0" # Senin 02:41 WIB
+  workflow_dispatch:
+
+permissions: {}
+
+concurrency:
+  group: backup
+  cancel-in-progress: false
+
+jobs:
+  dump:
+    runs-on: ubuntu-latest
+    timeout-minutes: 20
+    steps:
+      - name: Cek secret
+        env:
+          SUPABASE_DB_URL: ${{ secrets.SUPABASE_DB_URL }}
+          BACKUP_PASSPHRASE: ${{ secrets.BACKUP_PASSPHRASE }}
+        run: |
+          test -n "$SUPABASE_DB_URL" || { echo "::error::Secret SUPABASE_DB_URL belum diisi"; exit 1; }
+          test ${#BACKUP_PASSPHRASE} -ge 16 || { echo "::error::Secret BACKUP_PASSPHRASE kosong/terlalu pendek (min 16 karakter)"; exit 1; }
+
+      - uses: supabase/setup-cli@v1
+        with:
+          version: latest
+
+      # CLI memakai image Postgres yang cocok dengan versi server.
+      - name: Dump roles, skema, data
+        env:
+          SUPABASE_DB_URL: ${{ secrets.SUPABASE_DB_URL }}
+        run: |
+          mkdir dump
+          supabase db dump --db-url "$SUPABASE_DB_URL" -f dump/roles.sql --role-only
+          supabase db dump --db-url "$SUPABASE_DB_URL" -f dump/schema.sql
+          supabase db dump --db-url "$SUPABASE_DB_URL" -f dump/data.sql --use-copy --data-only
+          # Dump kosong = gagal diam-diam; tolak.
+          test -s dump/schema.sql && grep -q "CREATE TABLE" dump/schema.sql
+          test -s dump/data.sql
+          ls -la dump
+
+      - name: Enkripsi
+        env:
+          BACKUP_PASSPHRASE: ${{ secrets.BACKUP_PASSPHRASE }}
+        run: |
+          name="backup-$(date -u +%Y-%m-%d)"
+          echo "NAME=$name" >> "$GITHUB_ENV"
+          tar czf - -C dump . \
+            | gpg --batch --yes --symmetric --cipher-algo AES256 \
+                  --passphrase-fd 3 3<<<"$BACKUP_PASSPHRASE" \
+                  -o "$name.tar.gz.gpg"
+          rm -rf dump
+          ls -la "$name.tar.gz.gpg"
+
+      - uses: actions/upload-artifact@v4
+        with:
+          name: ${{ env.NAME }}
+          path: ${{ env.NAME }}.tar.gz.gpg
+          retention-days: 56 # 8 minggu
+          if-no-files-found: error
