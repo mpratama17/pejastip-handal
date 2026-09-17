@@ -168,7 +168,7 @@ function Catalogue() {
                       <td className="py-2.5 pl-3 pr-4 tabular-nums text-ink-muted">{r.isbn ?? "—"}</td>
                       <td className="py-2.5 pr-4 font-semibold">
                         <span className="flex items-center gap-3">
-                          <span className="w-7 shrink-0">
+                          <span className="w-10 shrink-0">
                             <BookCover compact title={r.title} coverUrl={r.cover_url} />
                           </span>
                           {r.title}

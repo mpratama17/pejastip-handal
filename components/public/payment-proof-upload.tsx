@@ -103,7 +103,7 @@ export function PaymentProofUpload({
           type="file"
           accept=".jpg,.jpeg,.png,.webp,.pdf"
           onChange={(e) => pickFile(e.target.files?.[0])}
-          className="mt-1 block w-full text-sm file:mr-3 file:rounded-md file:border-0 file:bg-primary-soft file:px-3 file:py-2 file:text-sm file:font-semibold file:text-ink"
+          className="mt-1 block w-full cursor-pointer rounded-md border border-dashed border-ink bg-surface p-3 text-sm file:mr-3 file:cursor-pointer file:rounded-full file:border file:border-ink file:border-solid file:bg-primary file:px-3 file:py-1.5 file:text-sm file:font-bold file:text-ink"
         />
       </label>
       <div className="grid grid-cols-2 gap-3">
