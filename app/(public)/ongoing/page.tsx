@@ -5,7 +5,8 @@ import Link from "next/link";
 import { supabase } from "@/lib/supabase/client";
 import { formatDateID } from "@/lib/format";
 import { useSiteSettings, waLink } from "@/lib/site-settings";
-import { EVENT_TYPE_LABEL, isAcceptingOrders, isBeforeOpen, isPastClose } from "@/lib/labels";
+import { EVENT_TYPE_COLOR, isAcceptingOrders, isBeforeOpen, isPastClose } from "@/lib/labels";
+import { TypeChip } from "@/components/type-chip";
 import { StatusChip } from "@/components/status-chip";
 import type { Database } from "@/types/database";
 
@@ -47,12 +48,12 @@ export default function OngoingPage() {
     <div className="mx-auto max-w-5xl px-4 py-10">
       <div className="flex flex-col gap-4 sm:flex-row sm:items-end sm:justify-between">
         <div>
-          <h1 className="font-display text-3xl font-semibold">Batch berjalan</h1>
+          <h1 className="font-display text-3xl font-bold">Batch berjalan</h1>
           <p className="mt-1 text-sm text-ink-muted">Status dan perkiraan tiba setiap batch yang sedang diproses.</p>
         </div>
         <Link
           href="/track"
-          className="btn btn-secondary press px-4 py-2.5 text-center text-sm font-semibold"
+          className="btn btn-secondary press px-4 py-2.5 text-sm"
         >
           Lacak order pribadi
         </Link>
@@ -80,11 +81,13 @@ export default function OngoingPage() {
             const pastClose = isPastClose(ev, now);
             const beforeOpen = isBeforeOpen(ev, now);
             return (
-              <li key={ev.id} className="flex flex-col rounded-lg border border-border bg-surface p-5">
+              <li key={ev.id} className="card flex flex-col overflow-hidden">
+                <span className={`h-3 border-b border-ink ${EVENT_TYPE_COLOR[ev.type]}`} />
+                <div className="flex flex-1 flex-col p-5">
                 <div className="flex items-start justify-between gap-3">
                   <div>
-                    <p className="text-xs font-medium text-ink-faint">{EVENT_TYPE_LABEL[ev.type]}</p>
-                    <h2 className="mt-0.5 font-display text-xl font-semibold leading-snug">{ev.name}</h2>
+                    <TypeChip type={ev.type} />
+                    <h2 className="mt-1.5 font-display text-xl font-bold leading-snug">{ev.name}</h2>
                   </div>
                   <StatusChip kind="event" status={pastClose ? "closed" : ev.status} />
                 </div>
@@ -94,11 +97,11 @@ export default function OngoingPage() {
                 <dl className="mt-4 grid grid-cols-2 gap-3 text-sm">
                   <div>
                     <dt className="text-xs text-ink-faint">Perkiraan tiba</dt>
-                    <dd className="font-medium">{ev.eta_note || "—"}</dd>
+                    <dd className="font-bold">{ev.eta_note || "—"}</dd>
                   </div>
                   <div>
                     <dt className="text-xs text-ink-faint">{beforeOpen ? "Dibuka" : accepting ? "Tutup" : "DP"}</dt>
-                    <dd className="font-medium">
+                    <dd className="font-bold">
                       {beforeOpen && ev.opens_at
                         ? formatDateID(ev.opens_at, true)
                         : accepting
@@ -111,13 +114,13 @@ export default function OngoingPage() {
                 </dl>
 
                 {accepting && (
-                  <div className="mt-4 flex gap-4 border-t-1 border-line pt-4 text-sm font-medium">
+                  <div className="mt-4 flex flex-wrap gap-2 border-t-1 border-line pt-4">
                     {withCatalogue.has(ev.id) ? (
                       <>
-                        <Link href={`/catalogue?event=${ev.id}`} className="text-link hover:underline">
+                        <Link href={`/catalogue?event=${ev.id}`} className="btn btn-secondary press px-4 py-2 text-sm">
                           Lihat katalog
                         </Link>
-                        <Link href={`/order?event=${ev.id}`} className="text-link hover:underline">
+                        <Link href={`/order?event=${ev.id}`} className="btn btn-primary press px-4 py-2 text-sm">
                           Order
                         </Link>
                       </>
@@ -128,7 +131,7 @@ export default function OngoingPage() {
                           href={waLink(settings.wa_admin_number, `Halo Admin, saya mau order untuk ${ev.name}.`)}
                           target="_blank"
                           rel="noopener noreferrer"
-                          className="text-link hover:underline"
+                          className="btn btn-wa press px-4 py-2 text-sm"
                         >
                           Order via WhatsApp
                         </a>
@@ -136,6 +139,7 @@ export default function OngoingPage() {
                     )}
                   </div>
                 )}
+                </div>
               </li>
             );
           })}
