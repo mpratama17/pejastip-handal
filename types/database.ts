@@ -315,6 +315,7 @@ export type Database = {
           discount_note: string | null
           event_id: string
           id: string
+          idempotency_key: string | null
           order_code: string
           status: Database["public"]["Enums"]["order_status"]
           subtotal_idr: number
@@ -329,6 +330,7 @@ export type Database = {
           discount_note?: string | null
           event_id: string
           id?: string
+          idempotency_key?: string | null
           order_code: string
           status?: Database["public"]["Enums"]["order_status"]
           subtotal_idr: number
@@ -343,6 +345,7 @@ export type Database = {
           discount_note?: string | null
           event_id?: string
           id?: string
+          idempotency_key?: string | null
           order_code?: string
           status?: Database["public"]["Enums"]["order_status"]
           subtotal_idr?: number
@@ -567,6 +570,47 @@ export type Database = {
         }
         Returns: boolean
       }
+      create_order: {
+        Args: {
+          p_client_ip?: string
+          p_customer_notes: string
+          p_event_id: string
+          p_full_name: string
+          p_idempotency_key: string
+          p_instagram: string
+          p_items: Json
+          p_payment_type: string
+          p_whatsapp: string
+        }
+        Returns: {
+          bank_accounts: Json
+          customer_code: string
+          dp_percent: number
+          nominal_due_idr: number
+          order_code: string
+          order_id: string
+          store_name: string
+          subtotal_idr: number
+          total_idr: number
+          wa_admin_number: string
+        }[]
+      }
+      generate_customer_code: { Args: never; Returns: string }
+      get_tracker: {
+        Args: { p_client_ip?: string; p_code: string }
+        Returns: {
+          admin_notes: string
+          balance_idr: number
+          created_at: string
+          event_name: string
+          items: Json
+          order_code: string
+          order_id: string
+          paid_idr: number
+          payment_state: string
+          total_idr: number
+        }[]
+      }
       import_catalog_csv: {
         Args: { p_event_id: string; p_rows: Json }
         Returns: {
@@ -575,6 +619,22 @@ export type Database = {
           message: string
           status: string
           title: string
+        }[]
+      }
+      normalize_whatsapp: { Args: { p_input: string }; Returns: string }
+      submit_payment_proof: {
+        Args: {
+          p_amount_idr: number
+          p_client_ip?: string
+          p_customer_code: string
+          p_method: Database["public"]["Enums"]["payment_method"]
+          p_order_code: string
+          p_paid_at: string
+          p_proof_path: string
+        }
+        Returns: {
+          payment_id: string
+          status: string
         }[]
       }
     }
