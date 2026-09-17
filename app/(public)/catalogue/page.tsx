@@ -31,12 +31,14 @@ function Catalogue() {
   const [rows, setRows] = useState<CatalogueRow[] | null>(null);
   const [search, setSearch] = useState("");
   const [page, setPage] = useState(1);
+  const [loadError, setLoadError] = useState(false);
 
   useEffect(() => {
     Promise.all([
       supabase.from("events").select("*").in("status", [...CATALOGUE_STATUSES]).order("created_at", { ascending: false }),
       supabase.from("event_items").select("event_id"),
     ]).then(([ev, items]) => {
+      if (ev.error || items.error) return setLoadError(true);
       const withItems = new Set((items.data ?? []).map((i) => i.event_id));
       const list = (ev.data ?? []).filter((e) => withItems.has(e.id));
       // Batch yang masih buka tampil duluan.
@@ -50,9 +52,17 @@ function Catalogue() {
 
   useEffect(() => {
     if (!eventId) return;
+    let stale = false;
     setRows(null);
     setPage(1);
-    supabase.rpc("get_catalogue", { p_event_id: eventId }).then(({ data }) => setRows(data ?? []));
+    supabase.rpc("get_catalogue", { p_event_id: eventId }).then(({ data, error }) => {
+      if (stale) return;
+      if (error) return setLoadError(true);
+      setRows(data ?? []);
+    });
+    return () => {
+      stale = true;
+    };
   }, [eventId]);
 
   const filtered = useMemo(() => {
@@ -120,7 +130,11 @@ function Catalogue() {
           )}
         </div>
 
-        {rows === null ? (
+        {loadError ? (
+          <p className="py-16 text-center text-sm text-danger" role="alert">
+            Katalog gagal dimuat. Periksa koneksi lalu muat ulang halaman.
+          </p>
+        ) : rows === null ? (
           <p className="py-16 text-center text-sm text-ink-muted">{events?.length === 0 ? "Belum ada batch dengan katalog." : "Memuat katalog…"}</p>
         ) : filtered.length === 0 ? (
           <p className="py-16 text-center text-sm text-ink-muted">

@@ -18,6 +18,7 @@ export default function OngoingPage() {
   const settings = useSiteSettings();
   const [events, setEvents] = useState<EventRow[] | null>(null);
   const [withCatalogue, setWithCatalogue] = useState<Set<string>>(new Set());
+  const [loadFailed, setLoadFailed] = useState(false);
 
   useEffect(() => {
     supabase
@@ -29,7 +30,8 @@ export default function OngoingPage() {
       .select("*")
       .in("status", [...STATUS_ORDER])
       .order("created_at", { ascending: false })
-      .then(({ data }) => {
+      .then(({ data, error }) => {
+        if (error) return setLoadFailed(true);
         const list = data ?? [];
         list.sort(
           (a, b) =>
@@ -55,7 +57,11 @@ export default function OngoingPage() {
         </Link>
       </div>
 
-      {events === null ? (
+      {loadFailed ? (
+        <p className="mt-10 rounded-lg border border-danger/30 bg-danger-soft p-6 text-center text-sm text-danger" role="alert">
+          Daftar batch gagal dimuat. Periksa koneksi lalu muat ulang halaman.
+        </p>
+      ) : events === null ? (
         <div className="mt-8 grid gap-4 sm:grid-cols-2">
           {[0, 1, 2, 3].map((i) => (
             <div key={i} className="h-32 animate-pulse rounded-lg bg-surface-sunken" />

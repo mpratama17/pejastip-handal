@@ -47,6 +47,7 @@ function OrderForm() {
 
   const [submitting, setSubmitting] = useState(false);
   const [error, setError] = useState<string | null>(null);
+  const [loadError, setLoadError] = useState(false);
   const [result, setResult] = useState<OrderResult | null>(null);
 
   useEffect(() => {
@@ -54,6 +55,7 @@ function OrderForm() {
       supabase.from("events").select("*").eq("status", "open").order("closes_at", { ascending: true, nullsFirst: false }),
       supabase.from("event_items").select("event_id"),
     ]).then(([ev, items]) => {
+      if (ev.error || items.error) return setLoadError(true);
       // Batch tanpa katalog dipesan lewat WhatsApp, bukan form (docs/02).
       const withItems = new Set((items.data ?? []).map((i) => i.event_id));
       const list = (ev.data ?? []).filter((e) => withItems.has(e.id));
@@ -65,8 +67,17 @@ function OrderForm() {
 
   useEffect(() => {
     if (!eventId) return;
+    // Abaikan respons batch sebelumnya kalau customer sudah ganti batch.
+    let stale = false;
     setCatalogue(null);
-    supabase.rpc("get_catalogue", { p_event_id: eventId }).then(({ data }) => setCatalogue(data ?? []));
+    supabase.rpc("get_catalogue", { p_event_id: eventId }).then(({ data, error }) => {
+      if (stale) return;
+      if (error) return setLoadError(true);
+      setCatalogue(data ?? []);
+    });
+    return () => {
+      stale = true;
+    };
   }, [eventId]);
 
   const selectedEvent = events?.find((e) => e.id === eventId);
@@ -134,7 +145,9 @@ function OrderForm() {
       // error lain (jaringan, dsb.) aman dicoba ulang berkat idempotency key.
       return setError(error.code === "P0001" ? error.message : "Order gagal terkirim. Coba lagi — order tidak akan dobel.");
     }
-    setResult(data?.[0] ?? null);
+    const row = data?.[0];
+    if (!row) return setError("Order mungkin sudah tercatat tapi konfirmasinya tidak terbaca. Tekan Kirim Order lagi — order tidak akan dobel.");
+    setResult(row);
     window.scrollTo({ top: 0 });
   }
 
@@ -154,6 +167,12 @@ function OrderForm() {
           ))}
         </div>
       </div>
+
+      {loadError && (
+        <p className="mt-6 rounded-lg border border-danger/30 bg-danger-soft p-4 text-sm text-danger" role="alert">
+          Data batch gagal dimuat. Periksa koneksi lalu muat ulang halaman.
+        </p>
+      )}
 
       <div className="mt-6 rounded-lg border border-border bg-surface p-5 sm:p-6">
         {step === 1 && (
@@ -186,7 +205,7 @@ function OrderForm() {
         {step === 2 && (
           <div className="flex flex-col gap-3">
             {events === null && <p className="text-sm text-ink-muted">Memuat batch…</p>}
-            {events?.length === 0 && (
+            {events?.length === 0 && !loadError && (
               <p className="text-sm text-ink-muted">
                 Belum ada batch dengan katalog yang buka.{" "}
                 <Link href="/ongoing" className="font-medium text-primary hover:underline">

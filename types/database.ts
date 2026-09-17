@@ -388,6 +388,7 @@ export type Database = {
           order_id: string
           paid_at: string | null
           proof_url: string | null
+          reviewed_at: string | null
           status: Database["public"]["Enums"]["payment_review_status"]
           verified_at: string | null
         }
@@ -400,6 +401,7 @@ export type Database = {
           order_id: string
           paid_at?: string | null
           proof_url?: string | null
+          reviewed_at?: string | null
           status?: Database["public"]["Enums"]["payment_review_status"]
           verified_at?: string | null
         }
@@ -412,6 +414,7 @@ export type Database = {
           order_id?: string
           paid_at?: string | null
           proof_url?: string | null
+          reviewed_at?: string | null
           status?: Database["public"]["Enums"]["payment_review_status"]
           verified_at?: string | null
         }
@@ -480,6 +483,8 @@ export type Database = {
           id: string
           postal_code: string
           province: string
+          recipient_name: string | null
+          recipient_phone: string | null
           service: string | null
           shipped_at: string | null
           shipping_cost_idr: number | null
@@ -496,6 +501,8 @@ export type Database = {
           id?: string
           postal_code: string
           province: string
+          recipient_name?: string | null
+          recipient_phone?: string | null
           service?: string | null
           shipped_at?: string | null
           shipping_cost_idr?: number | null
@@ -512,6 +519,8 @@ export type Database = {
           id?: string
           postal_code?: string
           province?: string
+          recipient_name?: string | null
+          recipient_phone?: string | null
           service?: string | null
           shipped_at?: string | null
           shipping_cost_idr?: number | null
@@ -558,10 +567,29 @@ export type Database = {
       }
     }
     Functions: {
+      admin_review_payment: {
+        Args: {
+          p_amount_idr: number
+          p_approve: boolean
+          p_note: string
+          p_payment_id: string
+        }
+        Returns: undefined
+      }
       admin_set_event_status: {
         Args: {
           p_event_id: string
           p_new_status: Database["public"]["Enums"]["event_status"]
+        }
+        Returns: undefined
+      }
+      admin_update_shipment: {
+        Args: {
+          p_mark_delivered: boolean
+          p_service: string
+          p_shipment_id: string
+          p_shipping_cost_idr: number
+          p_tracking_number: string
         }
         Returns: undefined
       }
@@ -608,6 +636,22 @@ export type Database = {
           wa_admin_number: string
         }[]
       }
+      create_shipment: {
+        Args: {
+          p_address_detail: string
+          p_address_street: string
+          p_city: string
+          p_code: string
+          p_courier: string
+          p_order_item_ids: string[]
+          p_postal_code: string
+          p_province: string
+          p_recipient_name: string
+          p_recipient_phone: string
+          p_whatsapp: string
+        }
+        Returns: string
+      }
       generate_customer_code: { Args: never; Returns: string }
       get_bestsellers: {
         Args: { p_limit?: number }
@@ -632,6 +676,17 @@ export type Database = {
           title: string
         }[]
       }
+      get_shippable_items: {
+        Args: { p_code: string; p_whatsapp: string }
+        Returns: {
+          balance_idr: number
+          eligible: boolean
+          order_code: string
+          order_item_id: string
+          qty: number
+          title: string
+        }[]
+      }
       get_tracker: {
         Args: { p_code: string }
         Returns: {
@@ -644,6 +699,7 @@ export type Database = {
           order_id: string
           paid_idr: number
           payment_state: string
+          payments: Json
           total_idr: number
         }[]
       }
@@ -657,8 +713,16 @@ export type Database = {
           title: string
         }[]
       }
+      is_active_order_folder: {
+        Args: { p_object_name: string }
+        Returns: boolean
+      }
       normalize_whatsapp: { Args: { p_input: string }; Returns: string }
       request_ip: { Args: never; Returns: string }
+      shipping_customer_id: {
+        Args: { p_code: string; p_whatsapp: string }
+        Returns: string
+      }
       submit_payment_proof: {
         Args: {
           p_amount_idr: number

@@ -60,10 +60,10 @@ export default function AdminDashboardPage() {
       <h1 className="font-display text-xl font-semibold text-ink">Dashboard</h1>
 
       <div className="mt-6 grid grid-cols-2 gap-4 lg:grid-cols-4">
-        <StatCard label="Order baru" value={stats?.newOrders} />
-        <StatCard label="Bukti pending" value={stats?.pendingPayments} />
-        <StatCard label="Piutang total" value={stats ? formatIDR(stats.totalReceivable) : undefined} />
-        <StatCard label="Event aktif" value={stats?.activeEvents} />
+        <StatCard label="Order baru" value={stats?.newOrders} href="/admin/orders" />
+        <StatCard label="Bukti pending" value={stats?.pendingPayments} href="/admin/payments" />
+        <StatCard label="Piutang total" value={stats ? formatIDR(stats.totalReceivable) : undefined} href="/admin/customers" />
+        <StatCard label="Event aktif" value={stats?.activeEvents} href="/admin/events" />
       </div>
 
       <div className="mt-10">
@@ -113,11 +113,11 @@ export default function AdminDashboardPage() {
   );
 }
 
-function StatCard({ label, value }: { label: string; value: string | number | undefined }) {
+function StatCard({ label, value, href }: { label: string; value: string | number | undefined; href: string }) {
   return (
-    <div className="rounded-lg border border-border bg-surface p-4">
+    <Link href={href} className="rounded-lg border border-border bg-surface p-4 transition-colors hover:border-primary">
       <p className="text-xs font-medium text-ink-muted">{label}</p>
       <p className="mt-1 font-display text-2xl font-semibold text-ink">{value ?? "…"}</p>
-    </div>
+    </Link>
   );
 }

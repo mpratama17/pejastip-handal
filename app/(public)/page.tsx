@@ -24,12 +24,15 @@ export default function HomePage() {
   const [openEvents, setOpenEvents] = useState<EventRow[] | null>(null);
   const [withCatalogue, setWithCatalogue] = useState<Set<string>>(new Set());
   const [bestsellers, setBestsellers] = useState<Bestseller[]>([]);
+  const [loadFailed, setLoadFailed] = useState(false);
 
   useEffect(() => {
     Promise.all([
       supabase.from("events").select("*").eq("status", "open").order("closes_at", { ascending: true, nullsFirst: false }),
       supabase.from("event_items").select("event_id"),
     ]).then(([ev, items]) => {
+      // Gagal muat ≠ "belum ada batch": jangan tampilkan pesan yang menyesatkan.
+      if (ev.error || items.error) return setLoadFailed(true);
       const ids = new Set((items.data ?? []).map((i) => i.event_id));
       // Hero mengutamakan batch yang bisa langsung dipesan lewat form.
       const list = [...(ev.data ?? [])].sort((a, b) => Number(ids.has(b.id)) - Number(ids.has(a.id)));
@@ -50,7 +53,15 @@ export default function HomePage() {
           <div className="min-w-0">
           <p className="max-w-md text-sm text-bg/70">{settings?.store_tagline}</p>
 
-          {openEvents === null ? (
+          {loadFailed ? (
+            <p className="mt-8 max-w-md text-sm text-bg/80" role="alert">
+              Info batch gagal dimuat. Periksa koneksi lalu muat ulang halaman, atau{" "}
+              <Link href="/ongoing" className="underline underline-offset-4">
+                buka Batch Berjalan
+              </Link>
+              .
+            </p>
+          ) : openEvents === null ? (
             <div className="mt-6 h-24 max-w-lg animate-pulse rounded-md bg-bg/10" />
           ) : featured ? (
             <>

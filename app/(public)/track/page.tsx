@@ -18,6 +18,13 @@ type TrackerItem = {
   courier: string | null;
   tracking_number: string | null;
 };
+type TrackerPayment = { amount_idr: number; status: "pending" | "verified" | "rejected"; note: string | null; created_at: string };
+
+const PAYMENT_REVIEW: Record<TrackerPayment["status"], { label: string; className: string }> = {
+  pending: { label: "Menunggu verifikasi", className: "text-warning" },
+  verified: { label: "Terverifikasi", className: "text-success" },
+  rejected: { label: "Ditolak", className: "text-danger" },
+};
 
 export default function TrackPage() {
   return (
@@ -123,6 +130,7 @@ function Tracker() {
       <div className="mt-6 flex flex-col gap-4">
         {orders?.map((o) => {
           const items = (o.items as unknown as TrackerItem[]) ?? [];
+          const payments = (o.payments as unknown as TrackerPayment[]) ?? [];
           const owes = o.balance_idr > 0;
           return (
             <article key={o.order_id} className="rounded-lg border border-border bg-surface p-5 sm:p-6">
@@ -171,6 +179,30 @@ function Tracker() {
                 ))}
               </ul>
 
+              {payments.length > 0 && (
+                <details className="mt-3 text-sm">
+                  <summary className="cursor-pointer text-ink-muted">
+                    Riwayat pembayaran ({payments.length})
+                    {payments.some((p) => p.status === "rejected") && (
+                      <span className="ml-2 font-semibold text-danger">ada yang ditolak</span>
+                    )}
+                  </summary>
+                  <ul className="mt-2 flex flex-col gap-2">
+                    {payments.map((p, i) => (
+                      <li key={i} className="rounded-md bg-surface-sunken p-2.5">
+                        <div className="flex justify-between gap-2">
+                          <span className="tabular-nums">
+                            {formatIDR(p.amount_idr)} <span className="text-ink-faint">· {formatDateID(p.created_at)}</span>
+                          </span>
+                          <span className={`font-semibold ${PAYMENT_REVIEW[p.status].className}`}>{PAYMENT_REVIEW[p.status].label}</span>
+                        </div>
+                        {p.note && <p className="mt-1 text-ink-muted">{p.note}</p>}
+                      </li>
+                    ))}
+                  </ul>
+                </details>
+              )}
+
               {o.admin_notes && (
                 <div className="mt-3 rounded-md border-l-2 border-primary bg-primary-soft/50 p-3 text-sm">
                   <p className="text-xs font-semibold text-primary">Catatan admin</p>
@@ -186,6 +218,7 @@ function Tracker() {
                       orderCode={o.order_code}
                       customerCode={urlCode}
                       defaultAmount={o.balance_idr}
+                      onUploaded={() => lookup(urlCode)}
                     />
                   ) : (
                     <button

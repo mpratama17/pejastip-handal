@@ -4,49 +4,39 @@ Snapshot status saat ini. Diupdate tiap close-out, ditimpa bukan ditambah.
 
 ## Status
 
-- **Dokumen** (`docs/01-05`, `README.md`): ✅ disepakati — schema, halaman, PRD, design system, proteksi kuota. Tech stack sempat direvisi total (Next.js server/OpenNext → static export + RPC Postgres + Supabase Edge Functions) setelah second opinion; semua dokumen sudah konsisten dengan arah baru.
-- **Identitas visual**: ✅ disepakati — brand "Pejastip Handal", token warna (pine/cover/paper/brick) + tipografi (Fraunces/Inter), lihat `docs/04-design-system.md`.
-- **Database**: ✅ live di Supabase project **pejastip-handal** (`yvtkbahufhvlvrbamvpj`, region `ap-southeast-1`).
-  - Skema + RLS + view + `check_rate_limit()` (M1), RPC admin (M1), RPC publik order/payment/tracker (M2) — semua di-push dan **diverifikasi langsung ke DB nyata**, bukan cuma `db push` sukses.
-  - Storage bucket privat `payment-proofs` (5 MB, jpg/png/webp/pdf) + policy anon-upload/admin-full-access.
-- **Kode — M1 admin inti**: ✅ selesai (beberapa dipotong sadar, lihat di bawah).
-  - Auth admin: login (email/password + Google OAuth) + guard client-side. **Diverifikasi end-to-end nyata**, termasuk login Google sampai dashboard.
-  - `/admin` dashboard, `/admin/events` (create + ubah status via RPC), `/admin/books` (katalog + CSV import), `/admin/orders` + detail (route `?id=`, bukan `[id]` — static export tidak dukung dynamic route tanpa `generateStaticParams`).
-- **Kode — M2 order form publik**: ✅ selesai, **diverifikasi end-to-end lewat browser nyata** (bukan cuma build lulus): isi form 5 langkah → order tersimpan di DB → halaman sukses tampil kode+rekening dari `settings` dengan benar → cek `/track` dengan kode itu → data cocok (sisa tagihan, status kirim per buku).
-  - `/order`: form 5 langkah (data diri → pilih batch → pilih buku dgn qty stepper & running subtotal → jenis bayar DP/lunas → konfirmasi) → halaman sukses (kode customer, rincian tagihan, rekening, upload bukti, tombol WA prefilled).
-  - `/track`: input kode → daftar order aktif dengan StatusChip bayar & kirim, sisa tagihan, catatan admin.
-  - RPC: `create_order` (idempotency, normalisasi WA, blacklist check, lock stok dalam transaksi, generate kode Crockford base32), `submit_payment_proof`, `get_tracker`.
-  - Upload bukti transfer: klien upload ke Storage dulu, baru RPC catat baris `payments`. **Kompresi gambar di klien (docs/05 §3 Lapisan 5) BELUM diimplementasi** — file besar ditolak oleh limit bucket (5 MB) tapi tanpa resize otomatis dulu.
-- **`pnpm build` dan `pnpm lint`**: ✅ lulus bersih di semua halaman (publik + admin).
-- **Git**: pushed ke `https://github.com/mpratama17/pejastip-handal`, branch `main`.
-- **Deploy**: belum — Cloudflare Pages belum disetup.
+- **Dokumen** (`docs/01-05`, `README.md`): ✅ disepakati. Stack: Next.js static export + Supabase (RPC Postgres `security definer` sebagai trust boundary).
+- **Identitas visual**: ✅ "Pejastip Handal" (pine/cover/paper/brick, Fraunces/Inter) — `docs/04`. Struktur & alur halaman customer mengikuti blossombooks.id (diamati langsung 2026-09-17), identitas tetap milik sendiri.
+- **Database** (project `pejastip-handal`, `yvtkbahufhvlvrbamvpj`, ap-southeast-1): ✅ semua migration di-push dan diuji langsung (REST anon + simulasi role `authenticated`), bukan cuma `db push` sukses.
+- **Halaman customer**: ✅ Beranda (hero batch buka + rak terlaris + 4 pintasan + cara kerja), Katalog (pilih batch, cari, tabel/kartu, sisa stok, paginasi), Batch Berjalan, Form Order (5 langkah), Lacak Order (status, resi, riwayat bayar + alasan tolak, upload pelunasan), Form Kirim (kode + WA, gabung/parsial, kurir dari settings, alamat), Request Buku, Cara Order (web vs WhatsApp), S&K (dari settings). Header/footer ala Blossom; mobile dicek di 390px.
+- **Halaman admin**: ✅ Dashboard (kartu bisa diklik), Event, Katalog + CSV, Order + detail, **Pembayaran** (pratinjau bukti via signed URL, verifikasi dengan koreksi nominal, tolak wajib alasan), **Pengiriman** (resi/ongkir/layanan, tandai diterima, salin alamat), **Customer** (piutang, riwayat order, catatan, blacklist wajib alasan — ditegakkan constraint DB), **Request Buku**.
+- **Alur end-to-end yang sudah diuji nyata** (browser + REST, lalu data dikembalikan ke kondisi seed): order → upload bukti (anon) → admin tolak/verifikasi → event "tiba" (cascade) → Form Kirim → admin isi resi → tracker menampilkan resi. Submit ganda Form Kirim ditolak (AC-13).
+- **`pnpm build` / `pnpm lint`**: ✅ bersih (22 halaman statis).
+- **Git**: `main` di https://github.com/mpratama17/pejastip-handal.
+- **Deploy**: belum (Cloudflare Pages).
 
-## Bug nyata yang ditemukan & diperbaiki sesi ini (proses verifikasi, bukan cuma baca kode)
+## Perbaikan keamanan yang ditemukan saat pengujian (sudah diperbaiki)
 
-Ditemukan lewat tes RPC langsung ke REST API (anon key), bukan cuma `db push` sukses:
-1. `gen_random_bytes` (pgcrypto) hidup di schema `extensions`, bukan `public` — fungsi dengan `set search_path = public` gagal resolve saat dipanggil via PostgREST.
-2. `order_code_seq` collision dengan order_code yang di-hardcode di `seed.sql`.
-3. Kolom `status` ambigu di `RETURNING` (nama sama dengan kolom `RETURNS TABLE`).
-4. Type mismatch `bigint` vs `integer` (`v_order_payment`) dan enum vs `text` (`payments.status`) di `RETURNS TABLE`.
+- Rate limit sebelumnya berbagi satu kuota global (`…:unknown`) karena frontend statis tidak mengirim IP → sekarang `request_ip()` dari header `cf-connecting-ip` di server; parameter `p_client_ip` (bisa dipalsukan) dihapus.
+- `check_rate_limit`/helper internal bisa dipanggil anon langsung (bisa dipakai memblokir order nomor WA orang lain) → di-revoke. Fungsi admin juga di-revoke eksplisit dari `anon` (Supabase memberi EXECUTE lewat default privileges, bukan hanya PUBLIC).
+- Upload bukti anon ke path bebas (bisa mengisi kuota storage) → dibatasi ke folder `{order_id}/` order aktif; tipe file & 5 MB ditegakkan bucket.
+- `submit_payment_proof` menolak path bukti di luar folder order sendiri.
+- Form Kirim mewajibkan kode **dan** nomor WA yang cocok (kode saja bisa bocor → alamat kiriman bisa dibajak).
+- Order form: keranjang dikosongkan saat ganti batch (sebelumnya pasti ditolak server).
 
-## Sengaja dipotong dari scope (bukan lupa)
+## Sengaja belum dikerjakan
 
-- **Edit item order** (tambah/hapus buku dari order yang sudah ada, R17) — order detail admin read-only untuk item.
-- **Dialog konfirmasi custom** (docs/04 §8.2) — batalkan order masih pakai `window.confirm()` native.
-- **Sidebar admin mobile** (docs/04 §4: "collapse jadi bottom sheet") — belum ada pola collapse.
-- **Toggle blacklist customer** — halaman `/admin/customers` belum dibuat.
-- **Kompresi gambar di klien** sebelum upload bukti (docs/05 §3 Lapisan 5).
-- **Turnstile** di 3 form publik (docs/05 §3 Lapisan 2) — butuh domain live di Cloudflare, masuk akal ditunda ke M4 hardening.
-- **`/catalogue` dan Home (`/`)** sebagai halaman tersendiri — tidak pernah eksplisit disebut di milestone M1-M4 manapun di `docs/03-prd.md` §8 (gap di dokumen asli). Order form saat ini mandiri (fetch event+katalog sendiri), jadi tidak memblokir order end-to-end.
+- Edit item order di admin (R17); dialog konfirmasi bermerek (masih `window.confirm`); sidebar admin versi mobile.
+- Turnstile (butuh domain live di Cloudflare) — M4.
+- Backup `pg_dump` + keep-alive GitHub Actions, migrasi data gsheet, deploy Cloudflare Pages — M4.
+- Konten settings masih default: `instagram_handle`, `wa_group_link` kosong; `wa_admin_number` & rekening masih contoh seed — **isi dengan data asli sebelum launch**.
+- Purge otomatis bukti transfer lama (docs/05 §5).
 
-## Belum diverifikasi / risiko terbuka
+## Catatan pengujian
 
-- Belum ada run lokal via Docker (`supabase start`) — semua verifikasi migration langsung ke project remote.
-- `docs/03-prd.md` §9: nama brand sudah ada ("Pejastip Handal"), domain masih belum ditentukan.
-- Supabase CLI versi 2.116 — ada v2.117 tersedia, belum diupdate.
-- Rate limit RPC (`check_rate_limit`) belum pernah dites sampai benar-benar kena limit (cuma dipanggil beberapa kali saat tes manual).
+- Browser pengujian memegang sesi admin (login Google), jadi upload lewat UI berjalan sebagai admin; jalur anon diuji terpisah lewat REST dengan anon key.
+- Belum ada dev loop Docker lokal; migration diuji langsung ke project remote.
 
-## Selanjutnya (urutan dari README §Rencana eksekusi)
+## Selanjutnya
 
-1. Payments (verifikasi admin) + shipping + customers (M3).
-2. Halaman statis + migrasi data + hardening (Turnstile, kompresi klien, backup) + deploy Cloudflare Pages (M4).
+1. Isi settings asli (WA admin, rekening, grup WA, Instagram, S&K final).
+2. M4: Turnstile, backup & keep-alive, migrasi gsheet, deploy Cloudflare Pages + domain.
