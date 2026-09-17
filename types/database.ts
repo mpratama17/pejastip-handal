@@ -754,6 +754,7 @@ export type Database = {
           items: Json
           order_code: string
           order_id: string
+          order_status: Database["public"]["Enums"]["order_status"]
           paid_idr: number
           payment_state: string
           payments: Json

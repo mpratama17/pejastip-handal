@@ -97,7 +97,7 @@ export default function OngoingPage() {
                     <dd className="font-medium">{ev.eta_note || "—"}</dd>
                   </div>
                   <div>
-                    <dt className="text-xs text-ink-faint">{beforeOpen ? "Dibuka" : accepting ? "Ditutup" : "DP"}</dt>
+                    <dt className="text-xs text-ink-faint">{beforeOpen ? "Dibuka" : accepting ? "Tutup" : "DP"}</dt>
                     <dd className="font-medium">
                       {beforeOpen && ev.opens_at
                         ? formatDateID(ev.opens_at, true)
