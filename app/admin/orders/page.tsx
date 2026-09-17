@@ -62,7 +62,12 @@ export default function AdminOrdersPage() {
 
   return (
     <div>
-      <h1 className="font-display text-xl font-semibold text-ink">Order</h1>
+      <div className="flex items-center justify-between">
+        <h1 className="font-display text-xl font-semibold text-ink">Order</h1>
+        <Link href="/admin/orders/new" className="rounded-md bg-primary px-4 py-2 text-sm font-semibold text-white hover:bg-primary-hover">
+          + Order Manual
+        </Link>
+      </div>
 
       <div className="mt-4 flex flex-wrap gap-3">
         <input

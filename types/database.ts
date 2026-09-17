@@ -567,6 +567,21 @@ export type Database = {
       }
     }
     Functions: {
+      admin_create_order: {
+        Args: {
+          p_admin_notes: string
+          p_event_id: string
+          p_full_name: string
+          p_idempotency_key: string
+          p_items: Json
+          p_whatsapp: string
+        }
+        Returns: {
+          customer_code: string
+          order_code: string
+          order_id: string
+        }[]
+      }
       admin_review_payment: {
         Args: {
           p_amount_idr: number
