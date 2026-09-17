@@ -15,6 +15,7 @@ const NAV = [
   { href: "/admin/shipments", label: "Pengiriman" },
   { href: "/admin/customers", label: "Customer" },
   { href: "/admin/requests", label: "Request Buku" },
+  { href: "/admin/settings", label: "Pengaturan" },
 ];
 
 export default function AdminLayout({ children }: { children: React.ReactNode }) {

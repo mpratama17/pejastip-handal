@@ -3,6 +3,7 @@
 import { useEffect, useState } from "react";
 import { supabase } from "@/lib/supabase/client";
 import { StatusChip } from "@/components/status-chip";
+import { EVENT_TYPE_LABEL } from "@/lib/labels";
 import type { Database } from "@/types/database";
 
 type EventRow = Database["public"]["Tables"]["events"]["Row"];
@@ -51,8 +52,20 @@ export default function AdminEventsPage() {
     setLoading(false);
   }
 
+  const [defaultDp, setDefaultDp] = useState<Partial<Record<EventType, number>>>({});
+
   useEffect(() => {
     loadEvents();
+    supabase
+      .from("settings")
+      .select("value")
+      .eq("key", "default_dp_percent")
+      .maybeSingle()
+      .then(({ data }) => {
+        const dp = (data?.value ?? {}) as Partial<Record<EventType, number>>;
+        setDefaultDp(dp);
+        setForm((f) => ({ ...f, dp_percent: String(dp[f.type] ?? f.dp_percent) }));
+      });
   }, []);
 
   async function handleCreate(e: React.FormEvent) {
@@ -70,7 +83,7 @@ export default function AdminEventsPage() {
       setError(error.message);
       return;
     }
-    setForm({ name: "", type: "publisher_po_us", dp_percent: "35", eta_note: "" });
+    setForm({ name: "", type: "publisher_po_us", dp_percent: String(defaultDp.publisher_po_us ?? 35), eta_note: "" });
     setShowForm(false);
     loadEvents();
   }
@@ -118,12 +131,15 @@ export default function AdminEventsPage() {
               <label className="block text-sm font-medium text-ink">Tipe</label>
               <select
                 value={form.type}
-                onChange={(e) => setForm({ ...form, type: e.target.value as EventType })}
+                onChange={(e) => {
+                  const type = e.target.value as EventType;
+                  setForm({ ...form, type, dp_percent: String(defaultDp[type] ?? form.dp_percent) });
+                }}
                 className="mt-1 w-full rounded-sm border border-border px-3 py-2 text-sm focus:border-primary focus:outline-none focus:ring-2 focus:ring-primary/30"
               >
                 {EVENT_TYPES.map((t) => (
                   <option key={t} value={t}>
-                    {t}
+                    {EVENT_TYPE_LABEL[t]}
                   </option>
                 ))}
               </select>
@@ -176,7 +192,7 @@ export default function AdminEventsPage() {
             {events.map((ev) => (
               <tr key={ev.id} className="border-t border-border">
                 <td className="px-4 py-2 font-medium text-ink">{ev.name}</td>
-                <td className="px-4 py-2 text-ink-muted">{ev.type}</td>
+                <td className="px-4 py-2 text-ink-muted">{EVENT_TYPE_LABEL[ev.type]}</td>
                 <td className="px-4 py-2">
                   <StatusChip kind="event" status={ev.status} />
                 </td>
