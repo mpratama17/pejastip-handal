@@ -13,6 +13,17 @@ export const EVENT_TYPE_LABEL: Record<EventType, string> = {
   other: "Lainnya",
 };
 
+// docs/04 §2.2 — satu warna per tipe batch (selalu dengan teks ink).
+export const EVENT_TYPE_COLOR: Record<EventType, string> = {
+  publisher_po_us: "bg-type-us",
+  publisher_po_uk: "bg-type-uk",
+  ready_stock: "bg-type-ready",
+  secondhand: "bg-type-used",
+  special_edition: "bg-type-special",
+  bbw_jastip: "bg-type-bazaar",
+  other: "bg-type-other",
+};
+
 export const BOOK_FORMAT_LABEL: Record<BookFormat, string> = {
   paperback: "Paperback",
   hardcover: "Hardcover",

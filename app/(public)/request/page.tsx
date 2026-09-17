@@ -8,7 +8,7 @@ import type { Database } from "@/types/database";
 type BookFormat = Database["public"]["Enums"]["book_format"];
 
 const INPUT =
-  "mt-1 w-full rounded-md border border-border bg-surface px-3 py-2.5 text-sm text-ink focus:border-primary focus:outline-none focus:ring-2 focus:ring-primary/30";
+  "mt-1 w-full rounded-md border border-border bg-surface px-3 py-2.5 text-sm text-ink";
 
 const EMPTY = { name: "", whatsapp: "", isbn: "", title: "", format: "" as BookFormat | "", notes: "" };
 
@@ -57,7 +57,7 @@ export default function RequestPage() {
         <ul className="mt-2 flex list-disc flex-col gap-1.5 pl-5 text-ink-muted">
           <li>
             Cari dulu judul atau ISBN-nya di{" "}
-            <Link href="/catalogue" className="font-medium text-primary hover:underline">
+            <Link href="/catalogue" className="font-medium text-link hover:underline">
               katalog
             </Link>{" "}
             — mungkin sudah tersedia.
@@ -126,7 +126,7 @@ export default function RequestPage() {
         <button
           type="submit"
           disabled={submitting}
-          className="mt-6 w-full rounded-md bg-primary px-4 py-3 text-sm font-semibold text-white hover:bg-primary-hover disabled:opacity-60"
+          className="btn btn-primary press mt-6 w-full px-4 py-3 text-sm font-semibold disabled:opacity-60"
         >
           {submitting ? "Mengirim…" : "Kirim Request"}
         </button>

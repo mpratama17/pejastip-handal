@@ -118,7 +118,7 @@ function ShipmentCard({ shipment: s, onSaved }: { shipment: ShipmentRow; onSaved
             {s.customers?.code} · {s.customers?.whatsapp} · diajukan {formatDateID(s.created_at)}
           </p>
         </div>
-        <span className="rounded-full bg-primary-soft px-2.5 py-1 text-xs font-semibold text-primary">{s.courier}</span>
+        <span className="rounded-full bg-primary-soft px-2.5 py-1 text-xs font-semibold text-ink">{s.courier}</span>
       </div>
 
       <div className="mt-3 flex items-start justify-between gap-3 rounded-md bg-surface-sunken p-3 text-sm">
@@ -148,12 +148,12 @@ function ShipmentCard({ shipment: s, onSaved }: { shipment: ShipmentRow; onSaved
       </ul>
 
       {s.delivered_at ? (
-        <p className="mt-4 border-t border-border pt-3 text-sm text-ink-muted">
+        <p className="mt-4 border-t-1 border-line pt-3 text-sm text-ink-muted">
           Resi <span className="font-semibold tabular-nums text-ink">{s.tracking_number}</span> · ongkir{" "}
           {formatIDR(s.shipping_cost_idr)} · diterima {formatDateID(s.delivered_at)}
         </p>
       ) : (
-        <div className="mt-4 border-t border-border pt-3">
+        <div className="mt-4 border-t-1 border-line pt-3">
           <div className="grid grid-cols-[1fr_7rem_5rem] gap-2">
             <label className="text-xs font-medium text-ink-muted">
               No. resi
@@ -170,7 +170,7 @@ function ShipmentCard({ shipment: s, onSaved }: { shipment: ShipmentRow; onSaved
           </div>
           {error && <p className="mt-2 text-sm text-danger">{error}</p>}
           <div className="mt-3 flex flex-wrap gap-2">
-            <button onClick={() => save(false)} disabled={busy} className="rounded-md bg-primary px-4 py-2 text-sm font-semibold text-white hover:bg-primary-hover disabled:opacity-60">
+            <button onClick={() => save(false)} disabled={busy} className="btn btn-primary press px-4 py-2 text-sm font-semibold disabled:opacity-60">
               {s.tracking_number ? "Simpan" : "Simpan Resi"}
             </button>
             {s.tracking_number && (

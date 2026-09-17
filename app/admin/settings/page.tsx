@@ -24,7 +24,7 @@ type Form = {
 const EVENT_TYPES = Object.keys(EVENT_TYPE_LABEL) as EventType[];
 
 const inputCls =
-  "mt-1 w-full rounded-sm border border-border bg-surface px-3 py-2 text-sm text-ink focus:border-primary focus:outline-none focus:ring-2 focus:ring-primary/30";
+  "mt-1 w-full rounded-sm border border-border bg-surface px-3 py-2 text-sm text-ink";
 
 const inlineInputCls = inputCls.replace("mt-1 ", "");
 
@@ -268,12 +268,12 @@ function Section({
     <section className="mt-6 rounded-lg border border-border bg-surface p-5">
       <h2 className="font-display text-lg font-semibold text-ink">{title}</h2>
       <div className="mt-4 flex flex-col gap-4">{children}</div>
-      <div className="mt-5 flex items-center gap-3 border-t border-border pt-4">
+      <div className="mt-5 flex items-center gap-3 border-t-1 border-line pt-4">
         <button
           type="button"
           onClick={save}
           disabled={state.busy}
-          className="rounded-md bg-primary px-4 py-2 text-sm font-semibold text-white hover:bg-primary-hover disabled:opacity-60"
+          className="btn btn-primary press px-4 py-2 text-sm font-semibold disabled:opacity-60"
         >
           {state.busy ? "Menyimpan…" : "Simpan"}
         </button>
@@ -299,7 +299,7 @@ function Field({ label, hint, children }: { label: string; hint?: string; childr
 
 function AddButton({ onClick, children }: { onClick: () => void; children: React.ReactNode }) {
   return (
-    <button type="button" onClick={onClick} className="mt-1 self-start text-sm font-semibold text-primary hover:underline">
+    <button type="button" onClick={onClick} className="mt-1 self-start text-sm font-semibold text-link hover:underline">
       + {children}
     </button>
   );

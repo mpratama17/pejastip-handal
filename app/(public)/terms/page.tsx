@@ -24,7 +24,7 @@ export default function TermsPage() {
               <ol className="mt-2 grid gap-1 text-sm sm:grid-cols-2">
                 {s.terms.map((t, i) => (
                   <li key={t.title}>
-                    <a href={`#s${i + 1}`} className="text-primary hover:underline">
+                    <a href={`#s${i + 1}`} className="text-link hover:underline">
                       {i + 1}. {t.title}
                     </a>
                   </li>

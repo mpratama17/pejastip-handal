@@ -180,7 +180,7 @@ export default function AdminBooksPage() {
                   </thead>
                   <tbody>
                     {importResults.map((r) => (
-                      <tr key={r.csv_row_number} className="border-t border-border">
+                      <tr key={r.csv_row_number} className="border-t-1 border-line">
                         <td className="px-3 py-1.5">{r.csv_row_number}</td>
                         <td className={`px-3 py-1.5 font-medium ${r.status === "ok" ? "text-success" : "text-danger"}`}>
                           {r.status === "ok" ? "OK" : "Error"}
@@ -250,7 +250,7 @@ export default function AdminBooksPage() {
             <button
               type="submit"
               disabled={savingManual}
-              className="mt-3 rounded-md bg-primary px-4 py-2 text-sm font-semibold text-white hover:bg-primary-hover disabled:opacity-60"
+              className="btn btn-primary press mt-3 px-4 py-2 text-sm font-semibold disabled:opacity-60"
             >
               {savingManual ? "Menyimpan…" : "Tambah ke Katalog"}
             </button>
@@ -270,7 +270,7 @@ export default function AdminBooksPage() {
               </thead>
               <tbody>
                 {items.map((item) => (
-                  <tr key={item.id} className="border-t border-border">
+                  <tr key={item.id} className="border-t-1 border-line">
                     <td className="px-4 py-2 font-medium text-ink">{item.books.title}</td>
                     <td className="px-4 py-2 text-ink-muted">{item.books.author ?? "—"}</td>
                     <td className="px-4 py-2 text-ink-muted">{BOOK_FORMAT_LABEL[item.books.format]}</td>

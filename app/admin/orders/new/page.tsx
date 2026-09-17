@@ -18,7 +18,7 @@ type Line = { key: string; qty: number } & (
 );
 
 const inputCls =
-  "mt-1 w-full rounded-sm border border-border bg-surface px-3 py-2 text-sm text-ink focus:border-primary focus:outline-none focus:ring-2 focus:ring-primary/30";
+  "mt-1 w-full rounded-sm border border-border bg-surface px-3 py-2 text-sm text-ink";
 
 // Sama dengan normalize_whatsapp() di DB.
 function normalizeWa(v: string) {
@@ -198,7 +198,7 @@ export default function AdminNewOrderPage() {
               {customer.full_name} di-blacklist: {customer.blacklist_reason}
             </p>
           ) : (
-            <p className="mt-6 rounded-md bg-primary-soft px-3 py-2 text-primary">
+            <p className="mt-6 rounded-md bg-primary-soft px-3 py-2 text-ink">
               Customer lama: <span className="font-semibold">{customer.full_name}</span> ({customer.code})
             </p>
           )}
@@ -209,7 +209,7 @@ export default function AdminNewOrderPage() {
         <h2 className="text-sm font-semibold text-ink">Buku</h2>
 
         {lines.length > 0 && (
-          <ul className="mt-3 flex flex-col divide-y divide-border">
+          <ul className="mt-3 flex flex-col divide-y-1 divide-line">
             {lines.map((l) => (
               <li key={l.key} className="flex flex-wrap items-center justify-between gap-3 py-2 text-sm">
                 <span className="min-w-0 flex-1">
@@ -251,13 +251,13 @@ export default function AdminNewOrderPage() {
                   </option>
                 ))}
             </select>
-            <button type="button" disabled={!pick} onClick={addCatalog} className="rounded-md border border-primary px-3 py-2 text-sm font-semibold text-primary hover:bg-primary-soft disabled:opacity-40">
+            <button type="button" disabled={!pick} onClick={addCatalog} className="btn btn-secondary press px-3 py-2 text-sm font-semibold disabled:opacity-40">
               Tambah
             </button>
           </div>
         )}
 
-        <div className="mt-3 grid grid-cols-[1fr_9rem_auto] items-end gap-2 border-t border-border pt-3">
+        <div className="mt-3 grid grid-cols-[1fr_9rem_auto] items-end gap-2 border-t-1 border-line pt-3">
           <label className="block text-xs font-medium text-ink-muted">
             {eventId && catalog.length === 0 ? "Batch ini tanpa katalog — tulis judul buku" : "Buku di luar katalog"}
             <input value={manual.title} onChange={(e) => setManual({ ...manual, title: e.target.value })} placeholder="Judul" className={inputCls} />
@@ -266,13 +266,13 @@ export default function AdminNewOrderPage() {
             Harga (Rp)
             <input type="number" min={0} value={manual.price} onChange={(e) => setManual({ ...manual, price: e.target.value })} className={`${inputCls} tabular-nums`} />
           </label>
-          <button type="button" onClick={addManual} className="rounded-md border border-primary px-3 py-2 text-sm font-semibold text-primary hover:bg-primary-soft">
+          <button type="button" onClick={addManual} className="btn btn-secondary press px-3 py-2 text-sm font-semibold">
             Tambah
           </button>
         </div>
         <p className="mt-2 text-xs text-ink-faint">Buku manual tidak tampil di katalog publik.</p>
 
-        <p className="mt-4 flex justify-between border-t border-border pt-3 text-sm">
+        <p className="mt-4 flex justify-between border-t-1 border-line pt-3 text-sm">
           <span className="text-ink-muted">Subtotal</span>
           <span className="font-display text-lg font-semibold tabular-nums">{formatIDR(subtotal)}</span>
         </p>
@@ -293,7 +293,7 @@ export default function AdminNewOrderPage() {
       <button
         type="submit"
         disabled={!canSubmit || busy}
-        className="mt-4 rounded-md bg-primary px-5 py-2.5 text-sm font-semibold text-white hover:bg-primary-hover disabled:opacity-50"
+        className="btn btn-primary press mt-4 px-5 py-2.5 text-sm font-semibold disabled:opacity-50"
       >
         {busy ? "Menyimpan…" : "Buat order"}
       </button>

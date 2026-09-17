@@ -1,11 +1,12 @@
-// Sampul dari cover_url; kalau kosong, sampul "kain" generatif dari palet
-// brand supaya rak tetap terlihat seperti rak buku, bukan kotak abu-abu.
+// Sampul dari cover_url; kalau kosong, sampul generatif berwarna datar dari
+// palet tipe batch (docs/04 §6) supaya rak tetap terlihat seperti rak buku.
 const JACKETS = [
-  ["#3d6b5e", "#1f4038"],
-  ["#b9603f", "#7c2e1d"],
-  ["#c79a3e", "#8a6a22"],
-  ["#4a5d7a", "#27364d"],
-  ["#8c4f6b", "#5a2d43"],
+  "var(--color-type-us)",
+  "var(--color-type-uk)",
+  "var(--color-type-ready)",
+  "var(--color-type-used)",
+  "var(--color-type-special)",
+  "var(--color-type-bazaar)",
 ];
 
 function jacketFor(seed: string) {
@@ -14,6 +15,8 @@ function jacketFor(seed: string) {
   for (const ch of seed) h = Math.imul(h ^ ch.charCodeAt(0), 16777619) >>> 0;
   return JACKETS[h % JACKETS.length];
 }
+
+const frame = "aspect-[2/3] w-full rounded-sm border-[1.5px] border-ink";
 
 export function BookCover({
   title,
@@ -32,29 +35,23 @@ export function BookCover({
   if (coverUrl) {
     return (
       // eslint-disable-next-line @next/next/no-img-element -- static export: tanpa image optimizer
-      <img
-        src={coverUrl}
-        alt={`Sampul ${title}`}
-        loading="lazy"
-        className={`aspect-[2/3] w-full rounded-sm object-cover shadow-sm ${className}`}
-      />
+      <img src={coverUrl} alt={`Sampul ${title}`} loading="lazy" className={`${frame} bg-surface object-cover ${className}`} />
     );
   }
-  const [from, to] = jacketFor(title);
   return (
     <div
       role="img"
       aria-label={`Sampul ${title}`}
-      className={`flex aspect-[2/3] w-full flex-col justify-between rounded-sm p-2.5 shadow-sm ${className}`}
-      style={{ background: `linear-gradient(160deg, ${from}, ${to})` }}
+      className={`${frame} flex flex-col justify-between p-2.5 text-ink ${className}`}
+      style={{ background: jacketFor(title) }}
     >
-      <span className="h-px w-6 bg-white/40" />
+      <span className="h-[3px] w-6 rounded-full bg-ink" />
       {compact ? (
-        <span className="font-display text-lg font-semibold italic leading-none text-white/80">{title.charAt(0)}</span>
+        <span className="font-display text-lg font-extrabold leading-none">{title.charAt(0)}</span>
       ) : (
         <div>
-          <p className="font-display text-[0.8rem] font-semibold leading-tight text-white [text-wrap:balance]">{title}</p>
-          {author && <p className="mt-1 text-[0.65rem] leading-tight text-white/70">{author}</p>}
+          <p className="font-display text-[0.85rem] font-extrabold leading-tight [text-wrap:balance]">{title}</p>
+          {author && <p className="mt-1 text-[0.65rem] font-medium leading-tight text-ink/70">{author}</p>}
         </div>
       )}
     </div>

@@ -90,13 +90,13 @@ function Tracker() {
             autoCapitalize="characters"
             autoComplete="off"
             spellCheck={false}
-            className="w-full rounded-md border border-border px-3 py-3 font-display text-lg uppercase tracking-wider placeholder:font-sans placeholder:text-sm placeholder:normal-case placeholder:tracking-normal focus:border-primary focus:outline-none focus:ring-2 focus:ring-primary/30"
+            className="w-full rounded-md border border-border px-3 py-3 font-display text-lg uppercase tracking-wider placeholder:font-sans placeholder:text-sm placeholder:normal-case placeholder:tracking-normal"
           />
         </label>
         <button
           type="submit"
           disabled={loading}
-          className="rounded-md bg-primary px-6 py-3 text-sm font-semibold text-white hover:bg-primary-hover disabled:opacity-60"
+          className="btn btn-primary press px-6 py-3 text-sm font-semibold disabled:opacity-60"
         >
           {loading ? "Mencari…" : "Lacak"}
         </button>
@@ -121,7 +121,7 @@ function Tracker() {
       {orders?.length === 0 && (
         <div className="mt-6 rounded-lg border border-border bg-surface p-8 text-center">
           <p className="font-medium">Belum ada order aktif untuk kode ini.</p>
-          <Link href="/ongoing" className="mt-2 inline-block text-sm font-medium text-primary hover:underline">
+          <Link href="/ongoing" className="mt-2 inline-block text-sm font-medium text-link hover:underline">
             Lihat batch yang sedang buka
           </Link>
         </div>
@@ -184,14 +184,14 @@ function Tracker() {
                   </div>
                   <div>
                     <dt className="text-xs text-ink-muted">Sisa tagihan</dt>
-                    <dd className={`font-display text-lg font-semibold tabular-nums ${owes ? "text-accent" : "text-success"}`}>
+                    <dd className={`font-display text-lg font-semibold tabular-nums ${owes ? "text-accent-ink" : "text-success"}`}>
                       {formatIDR(o.balance_idr)}
                     </dd>
                   </div>
                 </dl>
               )}
 
-              <ul className="mt-4 divide-y divide-border">
+              <ul className="mt-4 divide-y-1 divide-line">
                 {items.map((it, i) => (
                   <li key={i} className="flex items-start justify-between gap-3 py-2.5 text-sm">
                     <div>
@@ -234,14 +234,14 @@ function Tracker() {
               )}
 
               {o.admin_notes && (
-                <div className="mt-3 rounded-md border-l-2 border-primary bg-primary-soft/50 p-3 text-sm">
-                  <p className="text-xs font-semibold text-primary">Catatan admin</p>
+                <div className="mt-3 rounded-md border-l-2 border-ink bg-primary-soft/50 p-3 text-sm">
+                  <p className="text-xs font-semibold text-link">Catatan admin</p>
                   <p className="mt-0.5 whitespace-pre-line">{o.admin_notes}</p>
                 </div>
               )}
 
               {owes && (
-                <div className="mt-4 border-t border-border pt-4">
+                <div className="mt-4 border-t-1 border-line pt-4">
                   {uploadFor === o.order_id ? (
                     <PaymentProofUpload
                       orderId={o.order_id}
@@ -254,7 +254,7 @@ function Tracker() {
                     <button
                       type="button"
                       onClick={() => setUploadFor(o.order_id)}
-                      className="text-sm font-semibold text-primary hover:underline"
+                      className="text-sm font-semibold text-link hover:underline"
                     >
                       Upload bukti pembayaran
                     </button>
@@ -274,7 +274,7 @@ function Tracker() {
       ) && (
         <p className="mt-6 text-center text-sm text-ink-muted">
           Buku sudah tiba dan lunas?{" "}
-          <Link href={`/shipping?code=${urlCode}`} className="font-medium text-primary hover:underline">
+          <Link href={`/shipping?code=${urlCode}`} className="font-medium text-link hover:underline">
             Isi Form Kirim
           </Link>
         </p>

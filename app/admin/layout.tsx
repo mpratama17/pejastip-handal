@@ -52,15 +52,15 @@ export default function AdminLayout({ children }: { children: React.ReactNode })
 
   return (
     <ConfirmProvider>
-      <div className="min-h-screen bg-bg md:flex">
-        <header className="sticky top-0 z-20 flex items-center justify-between border-b border-border bg-surface px-4 py-3 md:hidden">
-          <p className="font-display text-base italic text-ink">Pejastip Handal</p>
+      <div className="admin-theme min-h-screen bg-bg md:flex">
+        <header className="sticky top-0 z-20 flex items-center justify-between border-b border-ink bg-surface px-4 py-3 md:hidden">
+          <p className="font-display text-lg font-extrabold tracking-tight text-ink">Pejastip Handal</p>
           <button
             type="button"
             aria-expanded={menuOpen}
             aria-controls="admin-nav"
             onClick={() => setMenuOpen((v) => !v)}
-            className="rounded-md border border-border px-3 py-1.5 text-sm font-semibold"
+            className="btn btn-secondary px-3 py-1.5 text-sm"
           >
             {menuOpen ? "Tutup" : "Menu"}
           </button>
@@ -74,17 +74,17 @@ export default function AdminLayout({ children }: { children: React.ReactNode })
           id="admin-nav"
           className={`${
             menuOpen ? "fixed inset-y-0 left-0 z-40 flex" : "hidden"
-          } w-64 shrink-0 flex-col overflow-y-auto border-r border-border bg-surface px-4 py-6 md:sticky md:top-0 md:flex md:h-screen md:w-56`}
+          } w-64 shrink-0 flex-col overflow-y-auto border-r border-ink bg-surface px-4 py-6 md:sticky md:top-0 md:flex md:h-screen md:w-56`}
         >
-          <p className="font-display text-base italic text-ink">Pejastip Handal</p>
+          <p className="font-display text-lg font-extrabold tracking-tight text-ink">Pejastip Handal</p>
           <nav className="mt-6 flex flex-col gap-1">
             {NAV.map((item) => (
               <Link
                 key={item.href}
                 href={item.href}
                 aria-current={isActive(pathname, item.href) ? "page" : undefined}
-                className={`rounded-md px-3 py-2 text-sm font-medium ${
-                  isActive(pathname, item.href) ? "bg-primary-soft text-primary" : "text-ink-muted hover:bg-surface-sunken"
+                className={`rounded-full px-3 py-2 text-sm font-semibold ${
+                  isActive(pathname, item.href) ? "border border-ink bg-primary text-ink" : "border border-transparent text-ink-muted hover:bg-surface-sunken"
                 }`}
               >
                 {item.label}

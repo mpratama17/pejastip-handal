@@ -64,7 +64,7 @@ export default function AdminOrdersPage() {
     <div>
       <div className="flex items-center justify-between">
         <h1 className="font-display text-xl font-semibold text-ink">Order</h1>
-        <Link href="/admin/orders/new" className="rounded-md bg-primary px-4 py-2 text-sm font-semibold text-white hover:bg-primary-hover">
+        <Link href="/admin/orders/new" className="btn btn-primary press px-4 py-2 text-sm font-semibold">
           + Order Manual
         </Link>
       </div>
@@ -117,9 +117,9 @@ export default function AdminOrdersPage() {
             {filtered.map((o) => {
               const ps = paymentStates[o.id];
               return (
-                <tr key={o.id} className="border-t border-border">
+                <tr key={o.id} className="border-t-1 border-line">
                   <td className="px-4 py-2">
-                    <Link href={`/admin/orders/detail?id=${o.id}`} className="font-medium text-primary hover:underline">
+                    <Link href={`/admin/orders/detail?id=${o.id}`} className="font-medium text-link hover:underline">
                       {o.order_code}
                     </Link>
                   </td>

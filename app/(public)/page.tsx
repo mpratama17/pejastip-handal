@@ -5,7 +5,9 @@ import Link from "next/link";
 import { supabase } from "@/lib/supabase/client";
 import { useSiteSettings, waLink } from "@/lib/site-settings";
 import { formatDateID } from "@/lib/format";
-import { EVENT_TYPE_LABEL, isAcceptingOrders } from "@/lib/labels";
+import { isAcceptingOrders } from "@/lib/labels";
+import { TypeChip } from "@/components/type-chip";
+import { CircleBadge, DaisySticker, SquiggleArrow } from "@/components/public/stickers";
 import { BookCover } from "@/components/public/book-cover";
 import type { Database } from "@/types/database";
 
@@ -49,107 +51,108 @@ export default function HomePage() {
 
   return (
     <>
-      <section className="bg-jacket text-bg">
-        <div className="mx-auto flex max-w-5xl items-center justify-between gap-10 px-4 pb-14 pt-12 sm:pt-16">
+      <section className="mx-auto w-full max-w-5xl px-4 pt-6 sm:pt-8">
+        <div className="card relative grid items-center gap-8 overflow-hidden bg-sky px-5 py-8 sm:px-10 sm:py-12 md:grid-cols-[1fr_auto]">
           <div className="min-w-0">
-          <p className="max-w-md text-sm text-bg/70">{settings?.store_tagline}</p>
+            <p className="max-w-md text-sm font-medium">{settings?.store_tagline}</p>
 
-          {loadFailed ? (
-            <p className="mt-8 max-w-md text-sm text-bg/80" role="alert">
-              Info batch gagal dimuat. Periksa koneksi lalu muat ulang halaman, atau{" "}
-              <Link href="/ongoing" className="underline underline-offset-4">
-                buka Batch Berjalan
-              </Link>
-              .
-            </p>
-          ) : openEvents === null ? (
-            <div className="mt-6 h-24 max-w-lg animate-pulse rounded-md bg-bg/10" />
-          ) : featured ? (
-            <>
-              <p className="mt-8 text-sm text-[#b9d3c8]">
-                Batch dibuka{featured.closes_at ? ` · tutup ${formatDateID(featured.closes_at)}` : ""}
+            {loadFailed ? (
+              <p className="mt-6 max-w-md text-sm" role="alert">
+                Info batch gagal dimuat. Periksa koneksi lalu muat ulang halaman, atau{" "}
+                <Link href="/ongoing" className="font-semibold underline underline-offset-4">
+                  buka Batch Berjalan
+                </Link>
+                .
               </p>
-              <h1 className="mt-2 max-w-2xl font-display text-4xl font-medium italic leading-tight [text-wrap:balance] sm:text-5xl">
-                {featured.name}
-              </h1>
-              <p className="mt-3 text-sm text-bg/75">
-                {EVENT_TYPE_LABEL[featured.type]} · DP {Number(featured.dp_percent)}%
-                {featured.eta_note ? ` · ${featured.eta_note}` : ""}
-              </p>
-              <div className="mt-7 flex flex-wrap gap-3">
-                {featuredHasCatalogue ? (
-                  <Link
-                    href={`/catalogue?event=${featured.id}`}
-                    className="rounded-md bg-accent px-5 py-3 text-sm font-semibold text-white hover:brightness-110"
-                  >
-                    Lihat Katalog
+            ) : openEvents === null ? (
+              <div className="mt-6 h-28 max-w-lg animate-pulse rounded-md bg-surface/50" />
+            ) : featured ? (
+              <>
+                <div className="mt-6 flex flex-wrap items-center gap-2 text-sm font-semibold">
+                  <TypeChip type={featured.type} />
+                  <span className="rounded-full border-[1.5px] border-ink bg-surface px-2.5 py-0.5 text-xs font-bold">
+                    Batch dibuka{featured.closes_at ? ` · tutup ${formatDateID(featured.closes_at)}` : ""}
+                  </span>
+                </div>
+                <h1 className="mt-4 max-w-2xl font-display text-[2rem] font-extrabold leading-[1.1] tracking-tight sm:text-5xl">
+                  {featured.name}
+                </h1>
+                <p className="mt-3 text-sm font-medium">
+                  DP {Number(featured.dp_percent)}%{featured.eta_note ? ` · tiba ${featured.eta_note}` : ""}
+                </p>
+                <div className="relative mt-7 flex flex-wrap gap-3">
+                  {featuredHasCatalogue ? (
+                    <Link href={`/catalogue?event=${featured.id}`} className="btn btn-primary press px-5 py-3 text-sm">
+                      Lihat Katalog
+                    </Link>
+                  ) : (
+                    settings?.wa_admin_number && (
+                      <a
+                        href={waLink(settings.wa_admin_number, `Halo Admin, saya mau order untuk ${featured.name}.`)}
+                        target="_blank"
+                        rel="noopener noreferrer"
+                        className="btn btn-primary press px-5 py-3 text-sm"
+                      >
+                        Order via WhatsApp
+                      </a>
+                    )
+                  )}
+                  <Link href="/how-to-order" className="btn btn-secondary press px-5 py-3 text-sm">
+                    Cara Order
                   </Link>
-                ) : (
-                  settings?.wa_admin_number && (
-                    <a
-                      href={waLink(settings.wa_admin_number, `Halo Admin, saya mau order untuk ${featured.name}.`)}
-                      target="_blank"
-                      rel="noopener noreferrer"
-                      className="rounded-md bg-accent px-5 py-3 text-sm font-semibold text-white hover:brightness-110"
-                    >
-                      Order via WhatsApp
-                    </a>
-                  )
+                  <SquiggleArrow className="pointer-events-none absolute left-[19.5rem] top-1 hidden w-32 lg:block" />
+                </div>
+                {otherOpen > 0 && (
+                  <Link href="/ongoing" className="mt-5 inline-block text-sm font-semibold underline underline-offset-4">
+                    +{otherOpen} batch lain sedang buka
+                  </Link>
                 )}
-                <Link
-                  href="/how-to-order"
-                  className="rounded-md border border-bg/40 px-5 py-3 text-sm font-semibold text-bg hover:bg-bg/10"
-                >
-                  Cara Order
-                </Link>
-              </div>
-              {otherOpen > 0 && (
-                <Link href="/ongoing" className="mt-5 inline-block text-sm text-bg/75 underline underline-offset-4 hover:text-bg">
-                  +{otherOpen} batch lain sedang buka
-                </Link>
-              )}
-            </>
-          ) : (
-            <>
-              <h1 className="mt-8 max-w-2xl font-display text-4xl font-medium italic leading-tight [text-wrap:balance] sm:text-5xl">
-                Belum ada batch yang buka
-              </h1>
-              <p className="mt-3 max-w-md text-sm text-bg/75">
-                Pantau jadwal batch berikutnya, atau titip cari buku lewat Request Buku.
-              </p>
-              <div className="mt-7 flex flex-wrap gap-3">
-                <Link href="/ongoing" className="rounded-md bg-accent px-5 py-3 text-sm font-semibold text-white hover:brightness-110">
-                  Lihat Batch Berjalan
-                </Link>
-                <Link href="/request" className="rounded-md border border-bg/40 px-5 py-3 text-sm font-semibold text-bg hover:bg-bg/10">
-                  Request Buku
-                </Link>
-              </div>
-            </>
-          )}
+              </>
+            ) : (
+              <>
+                <h1 className="mt-6 max-w-2xl font-display text-[2rem] font-extrabold leading-[1.1] tracking-tight sm:text-5xl">
+                  Belum ada batch yang buka
+                </h1>
+                <p className="mt-3 max-w-md text-sm font-medium">
+                  Pantau jadwal batch berikutnya, atau titip cari buku lewat Request Buku.
+                </p>
+                <div className="mt-7 flex flex-wrap gap-3">
+                  <Link href="/ongoing" className="btn btn-primary press px-5 py-3 text-sm">
+                    Lihat Batch Berjalan
+                  </Link>
+                  <Link href="/request" className="btn btn-secondary press px-5 py-3 text-sm">
+                    Request Buku
+                  </Link>
+                </div>
+              </>
+            )}
           </div>
 
           {bestsellers.length >= 3 && (
-            <div aria-hidden="true" className="relative hidden h-64 w-56 shrink-0 md:block">
+            // Pengganti foto di R1: tumpukan sampul di atas kartu kuning (docs/04 §6).
+            <div aria-hidden="true" className="relative mx-auto hidden h-72 w-64 md:block">
+              <div className="absolute inset-x-0 bottom-4 top-6 rounded-lg border-[length:var(--bw)] border-ink bg-primary shadow-hard" />
               {bestsellers.slice(0, 3).map((b, i) => (
                 <div
                   key={b.book_id}
-                  className="absolute top-0 w-36 shadow-xl"
-                  style={{ left: `${i * 34}px`, transform: `rotate(${(i - 1) * 7}deg) translateY(${i === 1 ? -6 : 10}px)`, zIndex: i === 1 ? 2 : 1 }}
+                  className="absolute top-14 w-24"
+                  style={{ left: `${22 + i * 62}px`, transform: `rotate(${(i - 1) * 8}deg) translateY(${i === 1 ? -10 : 6}px)`, zIndex: i === 1 ? 2 : 1 }}
                 >
                   <BookCover title={b.title} author={b.author} coverUrl={b.cover_url} />
                 </div>
               ))}
+              <CircleBadge text="JASTIP BUKU IMPOR • BATCH BARU • " className="absolute -bottom-2 -right-4 z-10 w-24 motion-safe:animate-[spin_24s_linear_infinite]" />
+              <DaisySticker className="absolute -left-6 top-0 z-10 w-14" />
             </div>
           )}
         </div>
       </section>
 
       {bestsellers.length > 0 && (
-        <section className="mx-auto max-w-5xl px-4 pt-12">
+        <section className="mx-auto w-full max-w-5xl px-4 pt-12">
           <div className="flex items-baseline justify-between">
-            <h2 className="font-display text-2xl font-semibold">Buku terlaris</h2>
-            <Link href="/catalogue" className="text-sm font-medium text-primary hover:underline">
+            <h2 className="font-display text-2xl font-bold">Buku terlaris</h2>
+            <Link href="/catalogue" className="text-sm font-semibold text-link hover:underline">
               Lihat katalog
             </Link>
           </div>
@@ -157,7 +160,7 @@ export default function HomePage() {
             {bestsellers.map((b) => (
               <div key={b.book_id} className="w-28 shrink-0 snap-start sm:w-32">
                 <BookCover title={b.title} author={b.author} coverUrl={b.cover_url} />
-                <p className="mt-2 line-clamp-2 text-sm font-medium leading-snug">{b.title}</p>
+                <p className="mt-2 line-clamp-2 text-sm font-semibold leading-snug">{b.title}</p>
                 {b.author && <p className="text-xs text-ink-muted">{b.author}</p>}
               </div>
             ))}
@@ -165,29 +168,29 @@ export default function HomePage() {
         </section>
       )}
 
-      <section className="mx-auto max-w-5xl px-4 pt-12">
-        <div className="grid grid-cols-2 gap-3 lg:grid-cols-4">
-          <QuickCard href="/how-to-order" title="Cara Order" body="Panduan pesan lewat web atau WhatsApp" />
-          <QuickCard href="/track" title="Lacak Order" body="Cek status pesananmu dengan kode" />
-          <QuickCard href="/ongoing" title="Batch Berjalan" body="Semua batch aktif & perkiraan tiba" />
+      <section className="mx-auto w-full max-w-5xl px-4 pt-12">
+        <div className="grid grid-cols-2 gap-4 lg:grid-cols-4">
+          <QuickCard href="/how-to-order" title="Cara Order" body="Panduan pesan lewat web atau WhatsApp" stripe="bg-type-ready" />
+          <QuickCard href="/track" title="Lacak Order" body="Cek status pesananmu dengan kode" stripe="bg-type-us" />
+          <QuickCard href="/ongoing" title="Batch Berjalan" body="Semua batch aktif & perkiraan tiba" stripe="bg-type-special" />
           {settings?.wa_group_link ? (
-            <QuickCard href={settings.wa_group_link} external title="Grup WhatsApp" body="Info batch baru & diskusi buku" />
+            <QuickCard href={settings.wa_group_link} external title="Grup WhatsApp" body="Info batch baru & diskusi buku" stripe="bg-type-uk" />
           ) : (
-            <QuickCard href="/request" title="Request Buku" body="Titip cari buku di luar katalog" />
+            <QuickCard href="/request" title="Request Buku" body="Titip cari buku di luar katalog" stripe="bg-type-uk" />
           )}
         </div>
       </section>
 
-      <section className="mx-auto max-w-5xl px-4 pt-14">
-        <h2 className="font-display text-2xl font-semibold">Cara kerjanya</h2>
+      <section className="mx-auto w-full max-w-5xl px-4 pt-14">
+        <h2 className="font-display text-2xl font-bold">Cara kerjanya</h2>
         <ol className="mt-6 grid gap-6 sm:grid-cols-2 lg:grid-cols-4">
           {STEPS.map((s, i) => (
             <li key={s.title} className="flex gap-3">
-              <span className="flex h-7 w-7 shrink-0 items-center justify-center rounded-full bg-primary-soft text-sm font-bold text-primary">
+              <span className="flex h-9 w-9 shrink-0 items-center justify-center rounded-full border-[length:var(--bw)] border-ink bg-primary font-display text-base font-extrabold">
                 {i + 1}
               </span>
               <div>
-                <p className="font-semibold">{s.title}</p>
+                <p className="font-bold">{s.title}</p>
                 <p className="mt-0.5 text-sm text-ink-muted">{s.body}</p>
               </div>
             </li>
@@ -198,13 +201,27 @@ export default function HomePage() {
   );
 }
 
-function QuickCard({ href, title, body, external }: { href: string; title: string; body: string; external?: boolean }) {
-  const cls =
-    "flex h-full flex-col rounded-lg border border-border bg-surface p-4 transition-colors hover:border-primary";
+function QuickCard({
+  href,
+  title,
+  body,
+  stripe,
+  external,
+}: {
+  href: string;
+  title: string;
+  body: string;
+  stripe: string;
+  external?: boolean;
+}) {
+  const cls = "card press flex h-full flex-col overflow-hidden";
   const content = (
     <>
-      <p className="font-display text-lg font-semibold">{title}</p>
-      <p className="mt-1 text-sm text-ink-muted">{body}</p>
+      <span className={`h-3 border-b-[length:var(--bw)] border-ink ${stripe}`} />
+      <span className="flex flex-1 flex-col p-4">
+        <span className="font-display text-lg font-bold">{title}</span>
+        <span className="mt-1 text-sm text-ink-muted">{body}</span>
+      </span>
     </>
   );
   return external ? (

@@ -53,3 +53,6 @@ client_secret*.json
 *.md
 .claude/
 Claude outputs/
+
+# referensi desain pihak ketiga — arsip lokal saja (docs/04 §1)
+docs/design-refs/

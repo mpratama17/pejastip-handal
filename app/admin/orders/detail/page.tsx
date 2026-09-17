@@ -182,7 +182,7 @@ function OrderDetail() {
             </thead>
             <tbody>
               {payments.map((p) => (
-                <tr key={p.id} className="border-t border-border">
+                <tr key={p.id} className="border-t-1 border-line">
                   <td className="px-4 py-2 text-ink-muted">{p.paid_at ?? formatDateID(p.created_at)}</td>
                   <td className="px-4 py-2 text-right tabular-nums">{formatIDR(p.amount_idr)}</td>
                   <td className="px-4 py-2 text-ink-muted">{p.method}</td>
@@ -234,7 +234,7 @@ function OrderDetail() {
         <button
           onClick={handleSaveNotes}
           disabled={saving}
-          className="mt-3 rounded-md bg-primary px-4 py-2 text-sm font-semibold text-white hover:bg-primary-hover disabled:opacity-60"
+          className="btn btn-primary press mt-3 px-4 py-2 text-sm font-semibold disabled:opacity-60"
         >
           {saving ? "Menyimpan…" : "Simpan"}
         </button>
@@ -252,7 +252,7 @@ function SummaryCard({ label, value, accent }: { label: string; value: string; a
   return (
     <div className="rounded-lg border border-border bg-surface p-4">
       <p className="text-xs font-medium text-ink-muted">{label}</p>
-      <p className={`mt-1 font-display text-xl font-semibold tabular-nums ${accent ? "text-accent" : "text-ink"}`}>
+      <p className={`mt-1 font-display text-xl font-semibold tabular-nums ${accent ? "text-accent-ink" : "text-ink"}`}>
         {value}
       </p>
     </div>
@@ -322,7 +322,7 @@ function ItemsSection({ order, items, onChanged }: { order: OrderRow; items: Ord
       <div className="flex items-center justify-between gap-3">
         <h2 className="text-sm font-semibold text-ink">Buku</h2>
         {canEdit && !editing && (
-          <button onClick={startEdit} className="text-sm font-semibold text-primary hover:underline">
+          <button onClick={startEdit} className="text-sm font-semibold text-link hover:underline">
             Edit buku
           </button>
         )}
@@ -344,7 +344,7 @@ function ItemsSection({ order, items, onChanged }: { order: OrderRow; items: Ord
             </thead>
             <tbody>
               {items.map((it) => (
-                <tr key={it.id} className="border-t border-border">
+                <tr key={it.id} className="border-t-1 border-line">
                   <td className="px-4 py-2 text-ink">{titleOf(it)}</td>
                   <td className="px-4 py-2 text-right tabular-nums">{it.qty}</td>
                   <td className="px-4 py-2 text-right tabular-nums">{formatIDR(it.unit_price_idr)}</td>
@@ -376,8 +376,8 @@ function ItemsSection({ order, items, onChanged }: { order: OrderRow; items: Ord
           </table>
         </div>
       ) : (
-        <div className="mt-2 rounded-lg border border-primary/40 bg-surface p-4">
-          <ul className="flex flex-col divide-y divide-border">
+        <div className="mt-2 rounded-lg border border-ink bg-surface p-4">
+          <ul className="flex flex-col divide-y-1 divide-line">
             {locked.map((it) => (
               <li key={it.id} className="flex items-center justify-between gap-3 py-2 text-sm text-ink-muted">
                 <span className="min-w-0">
@@ -427,7 +427,7 @@ function ItemsSection({ order, items, onChanged }: { order: OrderRow; items: Ord
             })}
           </ul>
 
-          <div className="mt-3 flex flex-wrap items-center gap-2 border-t border-border pt-3">
+          <div className="mt-3 flex flex-wrap items-center gap-2 border-t-1 border-line pt-3">
             <select
               aria-label="Tambah buku dari batch ini"
               value={adding}
@@ -449,7 +449,7 @@ function ItemsSection({ order, items, onChanged }: { order: OrderRow; items: Ord
                 setDraft((prev) => [...prev, { event_item_id: adding, qty: 1 }]);
                 setAdding("");
               }}
-              className="rounded-md border border-primary px-3 py-2 text-sm font-semibold text-primary hover:bg-primary-soft disabled:opacity-40"
+              className="btn btn-secondary press px-3 py-2 text-sm font-semibold disabled:opacity-40"
             >
               Tambah
             </button>
@@ -470,7 +470,7 @@ function ItemsSection({ order, items, onChanged }: { order: OrderRow; items: Ord
                 type="button"
                 onClick={save}
                 disabled={busy || newSubtotal === 0}
-                className="rounded-md bg-primary px-4 py-2 text-sm font-semibold text-white hover:bg-primary-hover disabled:opacity-60"
+                className="btn btn-primary press px-4 py-2 text-sm font-semibold disabled:opacity-60"
               >
                 {busy ? "Menyimpan…" : "Simpan perubahan"}
               </button>
