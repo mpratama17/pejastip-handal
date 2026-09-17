@@ -23,16 +23,22 @@ insert into events (id, name, type, status, dp_percent, payment_due_hours, eta_n
 -- stock ini order-nya via WA, bukan web) — jadi tidak muncul di dropdown
 -- order form, tapi tetap tampil di /ongoing.
 
-insert into books (id, isbn, title, author, format) values
-  ('20000000-0000-0000-0000-000000000001', '9780000000011', 'The Quiet Harbor', 'A. Merriday', 'paperback'),
-  ('20000000-0000-0000-0000-000000000002', '9780000000028', 'Wildflower Hour', 'J. Castellan', 'hardcover'),
-  ('20000000-0000-0000-0000-000000000003', '9780000000035', 'Paper Constellations', 'R. Nightingale', 'paperback');
+-- Sampul contoh ada di public/books/ (tidak ikut repo — karya penerbit).
+insert into books (id, isbn, title, author, format, cover_url) values
+  ('20000000-0000-0000-0000-000000000001', '9780000000011', 'Atomic Habits', 'James Clear', 'paperback', '/books/atomic-habits.jpg'),
+  ('20000000-0000-0000-0000-000000000002', '9780000000028', 'Filosofi Teras', 'Henry Manampiring', 'hardcover', '/books/filosofi-teras.jpg'),
+  ('20000000-0000-0000-0000-000000000003', '9780000000035', 'Hujan', 'Tere Liye', 'paperback', '/books/hujan.jpg'),
+  ('20000000-0000-0000-0000-000000000004', null, 'Malioboro at Midnight', 'Skysphire', 'paperback', '/books/malioboro-at-midnight.jpg'),
+  ('20000000-0000-0000-0000-000000000005', null, 'Seporsi Mie Ayam Sebelum Mati', 'Brian Khrisna', 'paperback', '/books/seporsi-mie-ayam.jpg');
 
 insert into event_items (id, event_id, book_id, price_idr, stock, is_active) values
   ('30000000-0000-0000-0000-000000000001', '10000000-0000-0000-0000-000000000001', '20000000-0000-0000-0000-000000000001', 185000, null, true),
   ('30000000-0000-0000-0000-000000000002', '10000000-0000-0000-0000-000000000001', '20000000-0000-0000-0000-000000000002', 210000, null, true),
   ('30000000-0000-0000-0000-000000000003', '10000000-0000-0000-0000-000000000001', '20000000-0000-0000-0000-000000000003', 195000, null, true),
-  ('30000000-0000-0000-0000-000000000004', '10000000-0000-0000-0000-000000000003', '20000000-0000-0000-0000-000000000001', 175000, null, true);
+  ('30000000-0000-0000-0000-000000000004', '10000000-0000-0000-0000-000000000003', '20000000-0000-0000-0000-000000000001', 175000, null, true),
+  -- stok terbatas & habis: buat menguji label stok di katalog
+  ('30000000-0000-0000-0000-000000000005', '10000000-0000-0000-0000-000000000001', '20000000-0000-0000-0000-000000000004', 115000, 5, true),
+  ('30000000-0000-0000-0000-000000000006', '10000000-0000-0000-0000-000000000001', '20000000-0000-0000-0000-000000000005', 98000, 0, true);
 
 -- Customer + order contoh, dipakai untuk uji tracker/v_order_payment secara manual.
 insert into customers (id, code, full_name, whatsapp, instagram) values
