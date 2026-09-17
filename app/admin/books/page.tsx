@@ -40,7 +40,10 @@ export default function AdminBooksPage() {
       .order("created_at", { ascending: false })
       .then(({ data }) => {
         setEvents(data ?? []);
-        if (data && data.length > 0) setEventId(data[0].id);
+        // ?event= dari tombol "Katalog" di halaman Event
+        const preset = new URLSearchParams(window.location.search).get("event");
+        const pick = data?.find((e) => e.id === preset) ?? data?.[0];
+        if (pick) setEventId(pick.id);
       });
   }, []);
 

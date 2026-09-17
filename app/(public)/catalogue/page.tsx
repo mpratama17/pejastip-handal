@@ -5,7 +5,7 @@ import Link from "next/link";
 import { useRouter, useSearchParams } from "next/navigation";
 import { supabase } from "@/lib/supabase/client";
 import { formatIDR } from "@/lib/format";
-import { BOOK_FORMAT_LABEL, EVENT_TYPE_LABEL } from "@/lib/labels";
+import { BOOK_FORMAT_LABEL, EVENT_TYPE_LABEL, isAcceptingOrders } from "@/lib/labels";
 import { StatusChip } from "@/components/status-chip";
 import { BookCover } from "@/components/public/book-cover";
 import type { Database } from "@/types/database";
@@ -31,6 +31,7 @@ function Catalogue() {
   const [rows, setRows] = useState<CatalogueRow[] | null>(null);
   const [search, setSearch] = useState("");
   const [page, setPage] = useState(1);
+  const [now] = useState(Date.now);
   const [loadError, setLoadError] = useState(false);
 
   useEffect(() => {
@@ -42,10 +43,10 @@ function Catalogue() {
       const withItems = new Set((items.data ?? []).map((i) => i.event_id));
       const list = (ev.data ?? []).filter((e) => withItems.has(e.id));
       // Batch yang masih buka tampil duluan.
-      list.sort((a, b) => Number(b.status === "open") - Number(a.status === "open"));
+      list.sort((a, b) => Number(isAcceptingOrders(b, now)) - Number(isAcceptingOrders(a, now)));
       setEvents(list);
     });
-  }, []);
+  }, [now]);
 
   const eventId = params.get("event") ?? events?.[0]?.id ?? "";
   const event = events?.find((e) => e.id === eventId);
@@ -102,7 +103,7 @@ function Catalogue() {
               {events?.map((ev) => (
                 <option key={ev.id} value={ev.id}>
                   {ev.name}
-                  {ev.status === "open" ? "" : " (ditutup)"}
+                  {isAcceptingOrders(ev, now) ? "" : " (ditutup)"}
                 </option>
               ))}
             </select>
@@ -120,7 +121,7 @@ function Catalogue() {
             placeholder="Cari judul, penulis, atau ISBN"
             className="w-full rounded-md border border-border px-3 py-2.5 text-sm focus:border-primary focus:outline-none focus:ring-2 focus:ring-primary/30 sm:max-w-sm"
           />
-          {event?.status === "open" && (
+          {event && isAcceptingOrders(event, now) && (
             <Link
               href={`/order?event=${event.id}`}
               className="rounded-md bg-primary px-4 py-2.5 text-center text-sm font-semibold text-white hover:bg-primary-hover"

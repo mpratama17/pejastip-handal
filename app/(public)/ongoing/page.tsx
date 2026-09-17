@@ -5,7 +5,7 @@ import Link from "next/link";
 import { supabase } from "@/lib/supabase/client";
 import { formatDateID } from "@/lib/format";
 import { useSiteSettings, waLink } from "@/lib/site-settings";
-import { EVENT_TYPE_LABEL } from "@/lib/labels";
+import { EVENT_TYPE_LABEL, isAcceptingOrders, isBeforeOpen, isPastClose } from "@/lib/labels";
 import { StatusChip } from "@/components/status-chip";
 import type { Database } from "@/types/database";
 
@@ -19,6 +19,7 @@ export default function OngoingPage() {
   const [events, setEvents] = useState<EventRow[] | null>(null);
   const [withCatalogue, setWithCatalogue] = useState<Set<string>>(new Set());
   const [loadFailed, setLoadFailed] = useState(false);
+  const [now] = useState(Date.now);
 
   useEffect(() => {
     supabase
@@ -73,61 +74,71 @@ export default function OngoingPage() {
         </p>
       ) : (
         <ul className="mt-8 grid gap-4 sm:grid-cols-2">
-          {events.map((ev) => (
-            <li key={ev.id} className="flex flex-col rounded-lg border border-border bg-surface p-5">
-              <div className="flex items-start justify-between gap-3">
-                <div>
-                  <p className="text-xs font-medium text-ink-faint">{EVENT_TYPE_LABEL[ev.type]}</p>
-                  <h2 className="mt-0.5 font-display text-xl font-semibold leading-snug">{ev.name}</h2>
+          {events.map((ev) => {
+            const accepting = isAcceptingOrders(ev, now);
+            // "Buka" yang sudah lewat tanggal tutup tampil sebagai Ditutup.
+            const pastClose = isPastClose(ev, now);
+            const beforeOpen = isBeforeOpen(ev, now);
+            return (
+              <li key={ev.id} className="flex flex-col rounded-lg border border-border bg-surface p-5">
+                <div className="flex items-start justify-between gap-3">
+                  <div>
+                    <p className="text-xs font-medium text-ink-faint">{EVENT_TYPE_LABEL[ev.type]}</p>
+                    <h2 className="mt-0.5 font-display text-xl font-semibold leading-snug">{ev.name}</h2>
+                  </div>
+                  <StatusChip kind="event" status={pastClose ? "closed" : ev.status} />
                 </div>
-                <StatusChip kind="event" status={ev.status} />
-              </div>
 
-              <dl className="mt-4 grid grid-cols-2 gap-3 text-sm">
-                <div>
-                  <dt className="text-xs text-ink-faint">Perkiraan tiba</dt>
-                  <dd className="font-medium">{ev.eta_note || "—"}</dd>
-                </div>
-                <div>
-                  <dt className="text-xs text-ink-faint">{ev.status === "open" ? "Ditutup" : "DP"}</dt>
-                  <dd className="font-medium">
-                    {ev.status === "open"
-                      ? ev.closes_at
-                        ? formatDateID(ev.closes_at)
-                        : "Sampai kuota penuh"
-                      : `${Number(ev.dp_percent)}%`}
-                  </dd>
-                </div>
-              </dl>
+                {ev.description && <p className="mt-3 whitespace-pre-line text-sm text-ink-muted">{ev.description}</p>}
 
-              {ev.status === "open" && (
-                <div className="mt-4 flex gap-4 border-t border-border pt-4 text-sm font-medium">
-                  {withCatalogue.has(ev.id) ? (
-                    <>
-                      <Link href={`/catalogue?event=${ev.id}`} className="text-primary hover:underline">
-                        Lihat katalog
-                      </Link>
-                      <Link href={`/order?event=${ev.id}`} className="text-primary hover:underline">
-                        Order
-                      </Link>
-                    </>
-                  ) : (
-                    settings?.wa_admin_number && (
-                      // Batch tanpa katalog dipesan lewat chat (docs/02 §Event tanpa katalog).
-                      <a
-                        href={waLink(settings.wa_admin_number, `Halo Admin, saya mau order untuk ${ev.name}.`)}
-                        target="_blank"
-                        rel="noopener noreferrer"
-                        className="text-primary hover:underline"
-                      >
-                        Order via WhatsApp
-                      </a>
-                    )
-                  )}
-                </div>
-              )}
-            </li>
-          ))}
+                <dl className="mt-4 grid grid-cols-2 gap-3 text-sm">
+                  <div>
+                    <dt className="text-xs text-ink-faint">Perkiraan tiba</dt>
+                    <dd className="font-medium">{ev.eta_note || "—"}</dd>
+                  </div>
+                  <div>
+                    <dt className="text-xs text-ink-faint">{beforeOpen ? "Dibuka" : accepting ? "Ditutup" : "DP"}</dt>
+                    <dd className="font-medium">
+                      {beforeOpen && ev.opens_at
+                        ? formatDateID(ev.opens_at, true)
+                        : accepting
+                          ? ev.closes_at
+                            ? formatDateID(ev.closes_at, true)
+                            : "Sampai kuota penuh"
+                          : `${Number(ev.dp_percent)}%`}
+                    </dd>
+                  </div>
+                </dl>
+
+                {accepting && (
+                  <div className="mt-4 flex gap-4 border-t border-border pt-4 text-sm font-medium">
+                    {withCatalogue.has(ev.id) ? (
+                      <>
+                        <Link href={`/catalogue?event=${ev.id}`} className="text-primary hover:underline">
+                          Lihat katalog
+                        </Link>
+                        <Link href={`/order?event=${ev.id}`} className="text-primary hover:underline">
+                          Order
+                        </Link>
+                      </>
+                    ) : (
+                      settings?.wa_admin_number && (
+                        // Batch tanpa katalog dipesan lewat chat (docs/02 §Event tanpa katalog).
+                        <a
+                          href={waLink(settings.wa_admin_number, `Halo Admin, saya mau order untuk ${ev.name}.`)}
+                          target="_blank"
+                          rel="noopener noreferrer"
+                          className="text-primary hover:underline"
+                        >
+                          Order via WhatsApp
+                        </a>
+                      )
+                    )}
+                  </div>
+                )}
+              </li>
+            );
+          })}
         </ul>
       )}
     </div>
