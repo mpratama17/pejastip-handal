@@ -56,3 +56,6 @@ Claude outputs/
 
 # referensi desain pihak ketiga — arsip lokal saja (docs/04 §1)
 docs/design-refs/
+
+# sampul buku contoh (karya penerbit) — lokal saja; produksi pakai Supabase Storage
+public/books/
