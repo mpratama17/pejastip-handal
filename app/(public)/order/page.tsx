@@ -5,7 +5,7 @@ import Link from "next/link";
 import { useSearchParams } from "next/navigation";
 import { supabase } from "@/lib/supabase/client";
 import { formatIDR, formatDateID } from "@/lib/format";
-import { BOOK_FORMAT_LABEL, EVENT_TYPE_LABEL } from "@/lib/labels";
+import { BOOK_FORMAT_LABEL, EVENT_TYPE_LABEL, isAcceptingOrders } from "@/lib/labels";
 import { waLink, type BankAccount } from "@/lib/site-settings";
 import { BookCover } from "@/components/public/book-cover";
 import { PaymentProofUpload } from "@/components/public/payment-proof-upload";
@@ -48,6 +48,7 @@ function OrderForm() {
   const [submitting, setSubmitting] = useState(false);
   const [error, setError] = useState<string | null>(null);
   const [loadError, setLoadError] = useState(false);
+  const [now] = useState(Date.now);
   const [result, setResult] = useState<OrderResult | null>(null);
 
   useEffect(() => {
@@ -58,12 +59,12 @@ function OrderForm() {
       if (ev.error || items.error) return setLoadError(true);
       // Batch tanpa katalog dipesan lewat WhatsApp, bukan form (docs/02).
       const withItems = new Set((items.data ?? []).map((i) => i.event_id));
-      const list = (ev.data ?? []).filter((e) => withItems.has(e.id));
+      const list = (ev.data ?? []).filter((e) => withItems.has(e.id) && isAcceptingOrders(e, now));
       setEvents(list);
       if (presetEvent && list.some((e) => e.id === presetEvent)) setEventId(presetEvent);
       else if (list.length === 1) setEventId(list[0].id);
     });
-  }, [presetEvent]);
+  }, [presetEvent, now]);
 
   useEffect(() => {
     if (!eventId) return;

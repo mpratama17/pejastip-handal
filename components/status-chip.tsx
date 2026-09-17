@@ -17,7 +17,7 @@ export const SHIPPING_STATUS_MAP: Record<string, { label: string; className: str
   delivered: { label: "Diterima", className: "bg-success-soft text-success" },
 };
 
-const EVENT_STATUS_MAP: Record<string, { label: string; className: string }> = {
+export const EVENT_STATUS_MAP: Record<string, { label: string; className: string }> = {
   draft: { label: "Draft", className: "bg-surface-sunken text-ink-muted" },
   open: { label: "Buka", className: "bg-success-soft text-success" },
   closed: { label: "Ditutup", className: "bg-warning-soft text-warning" },

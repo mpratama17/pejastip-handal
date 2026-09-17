@@ -5,7 +5,7 @@ import Link from "next/link";
 import { supabase } from "@/lib/supabase/client";
 import { useSiteSettings, waLink } from "@/lib/site-settings";
 import { formatDateID } from "@/lib/format";
-import { EVENT_TYPE_LABEL } from "@/lib/labels";
+import { EVENT_TYPE_LABEL, isAcceptingOrders } from "@/lib/labels";
 import { BookCover } from "@/components/public/book-cover";
 import type { Database } from "@/types/database";
 
@@ -25,6 +25,7 @@ export default function HomePage() {
   const [withCatalogue, setWithCatalogue] = useState<Set<string>>(new Set());
   const [bestsellers, setBestsellers] = useState<Bestseller[]>([]);
   const [loadFailed, setLoadFailed] = useState(false);
+  const [now] = useState(Date.now);
 
   useEffect(() => {
     Promise.all([
@@ -35,12 +36,12 @@ export default function HomePage() {
       if (ev.error || items.error) return setLoadFailed(true);
       const ids = new Set((items.data ?? []).map((i) => i.event_id));
       // Hero mengutamakan batch yang bisa langsung dipesan lewat form.
-      const list = [...(ev.data ?? [])].sort((a, b) => Number(ids.has(b.id)) - Number(ids.has(a.id)));
+      const list = (ev.data ?? []).filter((e) => isAcceptingOrders(e, now)).sort((a, b) => Number(ids.has(b.id)) - Number(ids.has(a.id)));
       setWithCatalogue(ids);
       setOpenEvents(list);
     });
     supabase.rpc("get_bestsellers", { p_limit: 12 }).then(({ data }) => setBestsellers(data ?? []));
-  }, []);
+  }, [now]);
 
   const featured = openEvents?.[0];
   const featuredHasCatalogue = featured ? withCatalogue.has(featured.id) : false;
