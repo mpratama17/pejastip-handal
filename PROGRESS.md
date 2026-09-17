@@ -8,7 +8,7 @@ Snapshot status saat ini. Diupdate tiap close-out, ditimpa bukan ditambah.
 - **Identitas visual**: ✅ "Pejastip Handal" (pine/cover/paper/brick, Fraunces/Inter) — `docs/04`. Struktur & alur halaman customer mengikuti blossombooks.id (diamati langsung 2026-09-17), identitas tetap milik sendiri.
 - **Database** (project `pejastip-handal`, `yvtkbahufhvlvrbamvpj`, ap-southeast-1): ✅ semua migration di-push dan diuji langsung (REST anon + simulasi role `authenticated`), bukan cuma `db push` sukses.
 - **Halaman customer**: ✅ Beranda (hero batch buka + rak terlaris + 4 pintasan + cara kerja), Katalog (pilih batch, cari, tabel/kartu, sisa stok, paginasi), Batch Berjalan, Form Order (5 langkah), Lacak Order (status, resi, riwayat bayar + alasan tolak, upload pelunasan), Form Kirim (kode + WA, gabung/parsial, kurir dari settings, alamat), Request Buku, Cara Order (web vs WhatsApp), S&K (dari settings). Header/footer ala Blossom; mobile dicek di 390px.
-- **Halaman admin**: ✅ Dashboard (kartu bisa diklik), Event, Katalog + CSV, Order + detail, **Pembayaran** (pratinjau bukti via signed URL, verifikasi dengan koreksi nominal, tolak wajib alasan), **Pengiriman** (resi/ongkir/layanan, tandai diterima, salin alamat), **Customer** (piutang, riwayat order, catatan, blacklist wajib alasan — ditegakkan constraint DB), **Request Buku**.
+- **Halaman admin**: ✅ Dashboard (kartu bisa diklik), Event, Katalog + CSV, Order + detail, **Pembayaran** (pratinjau bukti via signed URL, verifikasi dengan koreksi nominal, tolak wajib alasan), **Pengiriman** (resi/ongkir/layanan, tandai diterima, salin alamat), **Customer** (piutang, riwayat order, catatan, blacklist wajib alasan — ditegakkan constraint DB), **Request Buku**, **Pengaturan** (toko, WA/rekening, kurir, DP default, S&K), **detail order**: edit buku (qty/tambah/hapus, buku yang sudah diproses kirim terkunci, harga lama dipertahankan) + override status per buku (R15/R17) — diuji di browser lalu dikembalikan ke seed.
 - **Alur end-to-end yang sudah diuji nyata** (browser + REST, lalu data dikembalikan ke kondisi seed): order → upload bukti (anon) → admin tolak/verifikasi → event "tiba" (cascade) → Form Kirim → admin isi resi → tracker menampilkan resi. Submit ganda Form Kirim ditolak (AC-13).
 - **`pnpm build` / `pnpm lint`**: ✅ bersih (22 halaman statis).
 - **Git**: https://github.com/mpratama17/pejastip-handal — branch `main`, `ui`, `data`, `dev/backend` (dipakai saat perlu).
@@ -29,7 +29,7 @@ Snapshot status saat ini. Diupdate tiap close-out, ditimpa bukan ditambah.
 
 ## Sengaja belum dikerjakan
 
-- Edit item order di admin (R17); dialog konfirmasi bermerek (masih `window.confirm`); sidebar admin versi mobile.
+- Dialog konfirmasi bermerek (masih `window.confirm`); sidebar admin versi mobile.
 - Turnstile (butuh domain live di Cloudflare) — M4.
 - Backup `pg_dump` + keep-alive GitHub Actions, migrasi data gsheet, deploy Cloudflare Pages — M4.
 - Konten settings: WA admin + ShopeePay/GoPay sementara 087766647125 (nama pemilik akun belum dikonfirmasi); `instagram_handle`, `wa_group_link` kosong; S&K final masih draft owner.
