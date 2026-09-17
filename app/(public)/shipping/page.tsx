@@ -109,7 +109,7 @@ function ShippingForm() {
       <div className="mx-auto max-w-2xl px-4 py-10">
         <div className="card bg-primary p-6 shadow-hard sm:p-8">
           <p className="text-sm text-ink/75">Permintaan kirim tercatat</p>
-          <h1 className="mt-1 font-display text-3xl font-semibold">{done.length} buku siap dikemas</h1>
+          <h1 className="mt-1 font-display text-3xl font-bold">{done.length} buku siap dikemas</h1>
           <ul className="mt-4 list-disc pl-5 text-sm text-ink/75">
             {done.map((t) => (
               <li key={t}>{t}</li>
@@ -132,10 +132,10 @@ function ShippingForm() {
 
   return (
     <div className="mx-auto max-w-2xl px-4 py-10">
-      <h1 className="font-display text-3xl font-semibold">Form kirim</h1>
+      <h1 className="font-display text-3xl font-bold">Form kirim</h1>
       <p className="mt-1 text-sm text-ink-muted">Ajukan pengiriman untuk buku yang sudah tiba.</p>
 
-      <div className="mt-6 rounded-lg border border-border bg-surface-sunken p-5 text-sm">
+      <div className="mt-6 rounded-lg border border-ink bg-sky-soft p-5 text-sm">
         <p className="font-semibold">Isi form ini hanya jika</p>
         <ul className="mt-2 flex list-disc flex-col gap-1 pl-5 text-ink-muted">
           <li>kamu sudah dikabari bahwa bukumu tiba di Indonesia, dan</li>
@@ -144,7 +144,7 @@ function ShippingForm() {
         <p className="mt-2 text-ink-muted">Buku dari beberapa order boleh digabung dalam satu kiriman.</p>
       </div>
 
-      <form onSubmit={checkBooks} className="mt-6 rounded-lg border border-border bg-surface p-5 sm:p-6">
+      <form onSubmit={checkBooks} className="mt-6 card p-5 sm:p-6">
         <div className="grid gap-4 sm:grid-cols-2">
           <label className="block text-sm font-medium">
             Kode pelacakan
@@ -176,15 +176,15 @@ function ShippingForm() {
         <button
           type="submit"
           disabled={checking}
-          className="btn btn-secondary press mt-4 w-full px-4 py-2.5 text-sm font-semibold disabled:opacity-60"
+          className="btn btn-primary press mt-4 w-full px-4 py-2.5 text-sm"
         >
           {checking ? "Memeriksa…" : "Cek Buku"}
         </button>
       </form>
 
       {items && (
-        <form onSubmit={submit} className="mt-4 rounded-lg border border-border bg-surface p-5 sm:p-6">
-          <h2 className="font-display text-xl font-semibold">Buku yang bisa dikirim</h2>
+        <form onSubmit={submit} className="mt-4 card p-5 sm:p-6">
+          <h2 className="font-display text-xl font-bold">Buku yang bisa dikirim</h2>
 
           {eligible.length === 0 ? (
             <p className="mt-3 text-sm text-ink-muted">
