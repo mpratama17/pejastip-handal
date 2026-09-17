@@ -5,8 +5,9 @@ import Link from "next/link";
 import { useRouter, useSearchParams } from "next/navigation";
 import { supabase } from "@/lib/supabase/client";
 import { formatIDR } from "@/lib/format";
-import { BOOK_FORMAT_LABEL, EVENT_TYPE_LABEL, isAcceptingOrders } from "@/lib/labels";
+import { BOOK_FORMAT_LABEL, isAcceptingOrders } from "@/lib/labels";
 import { StatusChip } from "@/components/status-chip";
+import { TypeChip } from "@/components/type-chip";
 import { BookCover } from "@/components/public/book-cover";
 import type { Database } from "@/types/database";
 
@@ -82,11 +83,12 @@ function Catalogue() {
       <div className="rounded-lg border border-border bg-surface p-5 sm:p-7">
         <div className="flex flex-col gap-4 sm:flex-row sm:items-start sm:justify-between">
           <div>
-            <h1 className="font-display text-3xl font-semibold">Katalog buku</h1>
+            <h1 className="font-display text-3xl font-bold">Katalog buku</h1>
             {event && (
-              <p className="mt-1 flex flex-wrap items-center gap-2 text-sm text-ink-muted">
+              <p className="mt-2 flex flex-wrap items-center gap-2 text-sm text-ink-muted">
                 <StatusChip kind="event" status={event.status} />
-                {EVENT_TYPE_LABEL[event.type]} · DP {Number(event.dp_percent)}%
+                <TypeChip type={event.type} />
+                DP {Number(event.dp_percent)}%
                 {event.eta_note ? ` · ${event.eta_note}` : ""}
               </p>
             )}
@@ -97,7 +99,7 @@ function Catalogue() {
               value={eventId}
               onChange={(e) => router.replace(`/catalogue?event=${e.target.value}`, { scroll: false })}
               disabled={!events?.length}
-              className="w-full rounded-md border border-border bg-primary-soft px-3 py-2.5 text-sm font-medium text-ink"
+              className="w-full rounded-full border border-border px-4 py-2.5 text-sm font-semibold text-ink"
             >
               {events?.length === 0 && <option>Belum ada batch dengan katalog</option>}
               {events?.map((ev) => (
@@ -111,16 +113,20 @@ function Catalogue() {
         </div>
 
         <div className="mt-6 flex flex-col gap-3 sm:flex-row sm:items-center sm:justify-between">
-          <input
-            type="search"
-            value={search}
-            onChange={(e) => {
-              setSearch(e.target.value);
-              setPage(1);
-            }}
-            placeholder="Cari judul, penulis, atau ISBN"
-            className="w-full rounded-md border border-border px-3 py-2.5 text-sm sm:max-w-sm"
-          />
+          <label className="relative w-full sm:max-w-sm">
+            <span className="sr-only">Cari buku</span>
+            <SearchIcon />
+            <input
+              type="search"
+              value={search}
+              onChange={(e) => {
+                setSearch(e.target.value);
+                setPage(1);
+              }}
+              placeholder="Cari judul, penulis, atau ISBN"
+              className="w-full rounded-full border border-border py-2.5 pl-10 pr-4 text-sm"
+            />
+          </label>
           {event && isAcceptingOrders(event, now) && (
             <Link
               href={`/order?event=${event.id}`}
@@ -144,29 +150,36 @@ function Catalogue() {
         ) : (
           <>
             {/* Desktop: tabel */}
-            <div className="mt-6 hidden overflow-x-auto md:block">
+            <div className="mt-6 hidden overflow-x-auto rounded-md border border-ink md:block">
               <table className="w-full text-sm">
-                <thead className="border-b-1 border-line text-left text-ink-muted">
+                <thead className="border-b border-ink bg-surface-sunken text-left">
                   <tr>
-                    <th className="py-2 pr-4 font-medium">ISBN</th>
-                    <th className="py-2 pr-4 font-medium">Judul</th>
-                    <th className="py-2 pr-4 font-medium">Penulis</th>
-                    <th className="py-2 pr-4 font-medium">Format</th>
-                    <th className="py-2 pr-4 text-right font-medium">Stok</th>
-                    <th className="py-2 text-right font-medium">Harga</th>
+                    <th className="py-2.5 pl-3 pr-4 font-semibold">ISBN</th>
+                    <th className="py-2.5 pr-4 font-semibold">Judul</th>
+                    <th className="py-2.5 pr-4 font-semibold">Penulis</th>
+                    <th className="py-2.5 pr-4 font-semibold">Format</th>
+                    <th className="py-2.5 pr-4 text-right font-semibold">Stok</th>
+                    <th className="py-2.5 pr-3 text-right font-semibold">Harga</th>
                   </tr>
                 </thead>
                 <tbody>
                   {pageRows.map((r) => (
-                    <tr key={r.event_item_id} className="border-b-1 border-line last:border-0">
-                      <td className="py-3 pr-4 tabular-nums text-ink-muted">{r.isbn ?? "—"}</td>
-                      <td className="py-3 pr-4 font-medium">{r.title}</td>
-                      <td className="py-3 pr-4 text-ink-muted">{r.author ?? "—"}</td>
-                      <td className="py-3 pr-4 text-ink-muted">{BOOK_FORMAT_LABEL[r.format]}</td>
-                      <td className="py-3 pr-4 text-right">
+                    <tr key={r.event_item_id} className="border-b-1 border-line last:border-0 hover:bg-primary-soft">
+                      <td className="py-2.5 pl-3 pr-4 tabular-nums text-ink-muted">{r.isbn ?? "—"}</td>
+                      <td className="py-2.5 pr-4 font-semibold">
+                        <span className="flex items-center gap-3">
+                          <span className="w-7 shrink-0">
+                            <BookCover compact title={r.title} coverUrl={r.cover_url} />
+                          </span>
+                          {r.title}
+                        </span>
+                      </td>
+                      <td className="py-2.5 pr-4 text-ink-muted">{r.author ?? "—"}</td>
+                      <td className="py-2.5 pr-4 text-ink-muted">{BOOK_FORMAT_LABEL[r.format]}</td>
+                      <td className="py-2.5 pr-4 text-right">
                         <StockLabel left={r.stock_left} />
                       </td>
-                      <td className="py-3 text-right font-semibold tabular-nums text-accent-ink">{formatIDR(r.price_idr)}</td>
+                      <td className="py-2.5 pr-3 text-right font-bold tabular-nums text-accent-ink">{formatIDR(r.price_idr)}</td>
                     </tr>
                   ))}
                 </tbody>
@@ -176,18 +189,18 @@ function Catalogue() {
             {/* Mobile: kartu */}
             <ul className="mt-6 flex flex-col gap-3 md:hidden">
               {pageRows.map((r) => (
-                <li key={r.event_item_id} className="flex gap-3 border-b-1 border-line pb-3 last:border-0">
+                <li key={r.event_item_id} className="card flex gap-3 p-3">
                   <div className="w-16 shrink-0">
                     <BookCover compact title={r.title} coverUrl={r.cover_url} />
                   </div>
                   <div className="min-w-0 flex-1">
-                    <p className="font-medium leading-snug">{r.title}</p>
+                    <p className="font-bold leading-snug">{r.title}</p>
                     <p className="text-xs text-ink-muted">
                       {[r.author, BOOK_FORMAT_LABEL[r.format]].filter(Boolean).join(" · ")}
                     </p>
                     {r.isbn && <p className="text-xs tabular-nums text-ink-faint">{r.isbn}</p>}
                     <div className="mt-1.5 flex items-center justify-between">
-                      <span className="font-semibold tabular-nums text-accent-ink">{formatIDR(r.price_idr)}</span>
+                      <span className="font-bold tabular-nums text-accent-ink">{formatIDR(r.price_idr)}</span>
                       <StockLabel left={r.stock_left} />
                     </div>
                   </div>
@@ -204,14 +217,14 @@ function Catalogue() {
                   <button
                     onClick={() => setPage((p) => p - 1)}
                     disabled={page === 1}
-                    className="rounded-md border border-border px-3 py-1.5 disabled:opacity-40"
+                    className="btn btn-secondary press px-4 py-1.5"
                   >
                     Sebelumnya
                   </button>
                   <button
                     onClick={() => setPage((p) => p + 1)}
                     disabled={page === pageCount}
-                    className="rounded-md border border-border px-3 py-1.5 disabled:opacity-40"
+                    className="btn btn-secondary press px-4 py-1.5"
                   >
                     Berikutnya
                   </button>
@@ -232,8 +245,19 @@ function Catalogue() {
   );
 }
 
+const chip = "inline-flex whitespace-nowrap rounded-full border-[1.5px] border-ink px-2 py-0.5 text-xs font-bold";
+
 function StockLabel({ left }: { left: number | null }) {
-  if (left === null) return <span className="text-xs text-ink-muted">Pre-order</span>;
-  if (left === 0) return <span className="text-xs font-semibold text-danger">Habis</span>;
-  return <span className="text-xs tabular-nums text-ink-muted">Sisa {left}</span>;
+  if (left === null) return <span className={`${chip} bg-sky-soft`}>Pre-order</span>;
+  if (left === 0) return <span className={`${chip} bg-danger-soft text-danger`}>Habis</span>;
+  return <span className={`${chip} bg-type-ready tabular-nums`}>Sisa {left}</span>;
+}
+
+function SearchIcon() {
+  return (
+    <svg viewBox="0 0 20 20" aria-hidden="true" className="pointer-events-none absolute left-4 top-1/2 h-4 w-4 -translate-y-1/2">
+      <circle cx="8.5" cy="8.5" r="5.5" fill="none" stroke="currentColor" strokeWidth="2" />
+      <path d="m13 13 4 4" stroke="currentColor" strokeWidth="2" strokeLinecap="round" />
+    </svg>
+  );
 }
