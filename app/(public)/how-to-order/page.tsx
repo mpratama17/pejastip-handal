@@ -17,12 +17,12 @@ export default function HowToOrderPage() {
 
   return (
     <div className="mx-auto max-w-3xl px-4 py-10">
-      <h1 className="font-display text-3xl font-semibold">Cara order</h1>
+      <h1 className="font-display text-3xl font-bold">Cara order</h1>
       <p className="mt-1 text-sm text-ink-muted">Ada dua jalur, tergantung batch-nya punya katalog atau tidak.</p>
 
       <div className="mt-8 grid gap-4 sm:grid-cols-2">
-        <div className="flex flex-col rounded-lg border border-border bg-surface p-5">
-          <h2 className="font-display text-xl font-semibold">Lewat form order</h2>
+        <div className="flex flex-col card p-5">
+          <h2 className="font-display text-xl font-bold">Lewat form order</h2>
           <p className="mt-2 flex-1 text-sm text-ink-muted">
             Untuk batch yang punya katalog di web — sebagian besar pre-order penerbit.
           </p>
@@ -33,8 +33,8 @@ export default function HowToOrderPage() {
             Buka Form Order
           </Link>
         </div>
-        <div className="flex flex-col rounded-lg border border-border bg-surface p-5">
-          <h2 className="font-display text-xl font-semibold">Lewat WhatsApp</h2>
+        <div className="flex flex-col card p-5">
+          <h2 className="font-display text-xl font-bold">Lewat WhatsApp</h2>
           <p className="mt-2 flex-1 text-sm text-ink-muted">
             Untuk batch tanpa katalog — misalnya ready stock gudang atau jastip bazar. Sebutkan nama batch-nya saat chat.
           </p>
@@ -51,7 +51,7 @@ export default function HowToOrderPage() {
         </div>
       </div>
 
-      <h2 className="mt-12 font-display text-2xl font-semibold">Langkah order lewat web</h2>
+      <h2 className="mt-12 font-display text-2xl font-bold">Langkah order lewat web</h2>
       <ol className="mt-6 flex flex-col gap-5">
         {WEB_STEPS.map((step, i) => (
           <li key={step.title} className="flex gap-4">
