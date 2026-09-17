@@ -4,6 +4,7 @@ import { Suspense, useCallback, useEffect, useMemo, useState } from "react";
 import Link from "next/link";
 import { useRouter, useSearchParams } from "next/navigation";
 import { supabase } from "@/lib/supabase/client";
+import { useConfirm } from "@/components/admin/confirm-dialog";
 import { formatIDR, formatDateID } from "@/lib/format";
 import { StatusChip } from "@/components/status-chip";
 import type { Database } from "@/types/database";
@@ -56,7 +57,7 @@ function Customers() {
       <h1 className="font-display text-xl font-semibold text-ink">Customer</h1>
 
       <div className="mt-4 grid gap-6 xl:grid-cols-[1fr_28rem]">
-        <div>
+        <div className="min-w-0">
           <div className="flex flex-wrap items-center gap-3">
             <input
               type="search"
@@ -136,6 +137,7 @@ function CustomerDetail({ customer: c, onChanged }: { customer: Customer; onChan
   const [notes, setNotes] = useState(c.notes ?? "");
   const [reason, setReason] = useState(c.blacklist_reason ?? "");
   const [busy, setBusy] = useState(false);
+  const confirm = useConfirm();
   const [message, setMessage] = useState<string | null>(null);
 
   useEffect(() => {
@@ -167,13 +169,24 @@ function CustomerDetail({ customer: c, onChanged }: { customer: Customer; onChan
     onChanged();
   }
 
-  function toggleBlacklist() {
+  async function toggleBlacklist() {
     if (c.is_blacklisted) {
-      if (!window.confirm(`Buka blacklist ${c.full_name}? Nomor ini bisa order lagi.`)) return;
+      const ok = await confirm({
+        title: `Buka blacklist ${c.full_name}?`,
+        body: "Nomor ini bisa order lagi.",
+        confirmLabel: "Buka blacklist",
+      });
+      if (!ok) return;
       update({ is_blacklisted: false, blacklist_reason: null }, "Blacklist dibuka.");
     } else {
       if (!reason.trim()) return setMessage("Isi alasan blacklist dulu.");
-      if (!window.confirm(`Blacklist ${c.full_name}? Order baru dari ${c.whatsapp} akan ditolak.`)) return;
+      const ok = await confirm({
+        title: `Blacklist ${c.full_name}?`,
+        body: `Order baru dari ${c.whatsapp} akan ditolak.\nAlasan: ${reason.trim()}`,
+        confirmLabel: "Blacklist",
+        tone: "danger",
+      });
+      if (!ok) return;
       update({ is_blacklisted: true, blacklist_reason: reason.trim() }, "Customer di-blacklist.");
     }
   }

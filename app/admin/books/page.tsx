@@ -21,6 +21,7 @@ export default function AdminBooksPage() {
   const [items, setItems] = useState<EventItemWithBook[]>([]);
   const [importResults, setImportResults] = useState<ImportResult[]>([]);
   const [importing, setImporting] = useState(false);
+  const [importError, setImportError] = useState<string | null>(null);
 
   const [manual, setManual] = useState({
     isbn: "",
@@ -101,6 +102,7 @@ export default function AdminBooksPage() {
     if (rows.length === 0) return;
 
     setImporting(true);
+    setImportError(null);
     setImportResults([]);
     const { data, error } = await supabase.rpc("import_catalog_csv", {
       p_event_id: eventId,
@@ -108,7 +110,7 @@ export default function AdminBooksPage() {
     });
     setImporting(false);
     if (error) {
-      alert(`Import gagal: ${error.message}`);
+      setImportError(`Import gagal: ${error.message}`);
       return;
     }
     setImportResults(data ?? []);
@@ -158,6 +160,12 @@ export default function AdminBooksPage() {
               }}
               className="mt-3 text-sm"
             />
+            {importing && <p className="mt-2 text-sm text-ink-muted">Mengimpor…</p>}
+            {importError && (
+              <p role="alert" className="mt-2 text-sm text-danger">
+                {importError}
+              </p>
+            )}
             {importResults.length > 0 && (
               <div className="mt-4 overflow-x-auto rounded-md border border-border">
                 <table className="w-full text-xs">
