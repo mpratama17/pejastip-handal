@@ -11,14 +11,13 @@ Snapshot status saat ini. Diupdate tiap close-out, ditimpa bukan ditambah.
   - RPC admin (`admin_set_event_status` — bulk cascade R14/R15, `import_catalog_csv` — R16) sudah di-push, migration `20260917000000_admin_rpc.sql`.
   - RPC publik untuk order form (`create_order`, `submit_payment_proof`, `get_tracker`, dst) **belum dibuat** — itu milestone M2.
 - **Kode — M1 admin inti**: 🚧 sebagian besar selesai, beberapa dipotong sadar (lihat di bawah).
-  - Auth admin: login (`/admin/login`) + guard client-side (`app/admin/layout.tsx` — static export tidak punya middleware, jadi guard jalan di klien via `onAuthStateChange`). **Diverifikasi jalan nyata**: redirect otomatis ke login saat belum auth, dan percobaan login salah menampilkan error dari Supabase Auth beneran (bukan mock) — lihat screenshot sesi ini.
+  - Auth admin: login (`/admin/login`, email/password + Google OAuth) + guard client-side (`app/admin/layout.tsx` — static export tidak punya middleware, jadi guard jalan di klien via `onAuthStateChange`). **Diverifikasi jalan nyata end-to-end**: redirect otomatis ke login saat belum auth, error Supabase Auth asli saat kredensial salah, dan login lewat Google sampai masuk dashboard (dikonfirmasi user, akun `yogmhmmd17@gmail.com`). Google provider dikonfigurasi manual oleh user di dashboard Supabase + Google Cloud Console (redirect URI) — bukan lewat automasi, secret tidak pernah masuk kode/chat log.
   - `/admin` dashboard: 4 stat card + order terbaru.
   - `/admin/events`: list + create + ubah status (lewat RPC, bukan update langsung, supaya cascade R14 jalan).
   - `/admin/books`: katalog per event + tambah manual + **import CSV** (parser CSV naif — lihat `ponytail:` comment di `lib/csv.ts`, tanpa dukungan koma-dalam-kutip).
   - `/admin/orders` + `/admin/orders/detail` (route pakai query-string `?id=`, BUKAN `[id]` dynamic segment — static export tidak support dynamic route tanpa `generateStaticParams`, baru ketahuan dari docs Next.js 16 built-in): list+filter+search, detail dengan diskon/catatan admin, batalkan order (native `confirm()`, bukan dialog custom — lihat catatan di bawah).
-  - Belum ada akun admin asli (user memilih skip pembuatan akun sesi ini) — login end-to-end dengan kredensial valid belum pernah dites, cuma jalur error yang terverifikasi.
 - **`pnpm build` dan `pnpm lint`**: ✅ lulus bersih (`react-hooks/set-state-in-effect` dimatikan project-wide di `eslint.config.mjs` — pola fetch-on-mount memang standar di sini, bukan anti-pattern, karena arsitekturnya sengaja tanpa data-fetching library).
-- **Git**: 2 commit di `main` (scaffold awal, belum termasuk kerja admin sesi ini — belum diminta commit).
+- **Git**: pushed ke `https://github.com/mpratama17/pejastip-handal`, branch `main`.
 - **Deploy**: belum — Cloudflare Pages belum disetup.
 
 ## Sengaja dipotong dari scope M1 (bukan lupa)
@@ -30,14 +29,12 @@ Snapshot status saat ini. Diupdate tiap close-out, ditimpa bukan ditambah.
 
 ## Belum diverifikasi / risiko terbuka
 
-- Belum ada akun Supabase Auth admin — flow login-sukses belum pernah dites nyata.
 - Belum ada run lokal via Docker (`supabase start`) — semua verifikasi migration langsung ke project remote. Kalau nanti butuh dev loop lokal, install Docker Desktop dulu.
 - `docs/03-prd.md` §9: nama brand sudah ada ("Pejastip Handal"), domain masih belum ditentukan.
 - Supabase CLI versi 2.116 — ada v2.117 tersedia, belum diupdate.
 
 ## Selanjutnya (urutan dari README §Rencana eksekusi)
 
-1. Buat akun admin asli + verifikasi login sukses end-to-end.
-2. Order form publik + halaman sukses + tracker (M2) — butuh RPC publik baru.
-3. Payments (upload+verifikasi) + shipping + customers (M3).
-4. Halaman statis + migrasi data + hardening + deploy Cloudflare Pages (M4).
+1. Order form publik + halaman sukses + tracker (M2) — butuh RPC publik baru.
+2. Payments (upload+verifikasi) + shipping + customers (M3).
+3. Halaman statis + migrasi data + hardening + deploy Cloudflare Pages (M4).
