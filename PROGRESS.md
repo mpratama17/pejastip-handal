@@ -11,7 +11,7 @@ Snapshot status saat ini. Diupdate tiap close-out, ditimpa bukan ditambah.
 - **Halaman admin**: ✅ Dashboard (kartu bisa diklik), Event, Katalog + CSV, Order + detail, **Pembayaran** (pratinjau bukti via signed URL, verifikasi dengan koreksi nominal, tolak wajib alasan), **Pengiriman** (resi/ongkir/layanan, tandai diterima, salin alamat), **Customer** (piutang, riwayat order, catatan, blacklist wajib alasan — ditegakkan constraint DB), **Request Buku**.
 - **Alur end-to-end yang sudah diuji nyata** (browser + REST, lalu data dikembalikan ke kondisi seed): order → upload bukti (anon) → admin tolak/verifikasi → event "tiba" (cascade) → Form Kirim → admin isi resi → tracker menampilkan resi. Submit ganda Form Kirim ditolak (AC-13).
 - **`pnpm build` / `pnpm lint`**: ✅ bersih (22 halaman statis).
-- **Git**: `main` di https://github.com/mpratama17/pejastip-handal.
+- **Git**: https://github.com/mpratama17/pejastip-handal — branch `main`, `ui`, `data`, `dev/backend` (dipakai saat perlu).
 - **Deploy**: belum (Cloudflare Pages).
 
 ## Perbaikan keamanan yang ditemukan saat pengujian (sudah diperbaiki)
@@ -22,13 +22,18 @@ Snapshot status saat ini. Diupdate tiap close-out, ditimpa bukan ditambah.
 - `submit_payment_proof` menolak path bukti di luar folder order sendiri.
 - Form Kirim mewajibkan kode **dan** nomor WA yang cocok (kode saja bisa bocor → alamat kiriman bisa dibajak).
 - Order form: keranjang dikosongkan saat ganti batch (sebelumnya pasti ditolak server).
+- Admin = siapa pun yang login (signup terbuka) → allowlist tabel `admins` + `is_admin()` di semua policy/storage/RPC admin; UI mengeluarkan akun non-admin. Tambah admin: `insert into admins select id from auth.users where email = '…'`.
+- View `v_customer_balance`/`v_order_payment` terbaca anon (kode + nama semua customer) → `security_invoker` + revoke anon.
+- `create_order` membocorkan kode customer lama ke siapa pun yang tahu nomor WA → kode hanya dikembalikan untuk customer baru.
+- **Manual (dashboard):** matikan "Allow new users to sign up" di Supabase Auth.
 
 ## Sengaja belum dikerjakan
 
 - Edit item order di admin (R17); dialog konfirmasi bermerek (masih `window.confirm`); sidebar admin versi mobile.
 - Turnstile (butuh domain live di Cloudflare) — M4.
 - Backup `pg_dump` + keep-alive GitHub Actions, migrasi data gsheet, deploy Cloudflare Pages — M4.
-- Konten settings masih default: `instagram_handle`, `wa_group_link` kosong; `wa_admin_number` & rekening masih contoh seed — **isi dengan data asli sebelum launch**.
+- Konten settings: WA admin + ShopeePay/GoPay sementara 087766647125 (nama pemilik akun belum dikonfirmasi); `instagram_handle`, `wa_group_link` kosong; S&K final masih draft owner.
+- Proyek ini untuk klien (data lama: bit.ly/horangshuji_ordertracking, bit.ly/horangshuji_POPricelist), sementara dijalankan sebagai proyek pribadi.
 - Purge otomatis bukti transfer lama (docs/05 §5).
 
 ## Catatan pengujian
