@@ -3,6 +3,7 @@
 import { Suspense, useEffect, useState } from "react";
 import { useSearchParams } from "next/navigation";
 import { supabase } from "@/lib/supabase/client";
+import { useConfirm } from "@/components/admin/confirm-dialog";
 import { StatusChip, SHIPPING_STATUS_MAP } from "@/components/status-chip";
 import { formatIDR, formatDateID } from "@/lib/format";
 import { waLink } from "@/lib/site-settings";
@@ -43,6 +44,7 @@ function OrderDetail() {
   const [adminNotes, setAdminNotes] = useState("");
   const [discount, setDiscount] = useState({ amount: "0", note: "" });
   const [saving, setSaving] = useState(false);
+  const confirm = useConfirm();
   const [error, setError] = useState<string | null>(null);
   const [notesError, setNotesError] = useState<string | null>(null);
 
@@ -96,13 +98,16 @@ function OrderDetail() {
     const verifiedPaid = payments
       .filter((p) => p.status === "verified")
       .reduce((sum, p) => sum + p.amount_idr, 0);
-    const consequence =
-      verifiedPaid > 0
-        ? ` Pembayaran terverifikasi ${formatIDR(verifiedPaid)} akan menjadi kredit yang harus diselesaikan manual.`
-        : "";
-    const ok = window.confirm(
-      `Batalkan ${order.order_code} milik ${order.customers?.full_name}?${consequence}`,
-    );
+    const ok = await confirm({
+      title: `Batalkan ${order.order_code}?`,
+      body:
+        `Order milik ${order.customers?.full_name} tidak bisa diaktifkan lagi.` +
+        (verifiedPaid > 0
+          ? `\n\nPembayaran terverifikasi ${formatIDR(verifiedPaid)} menjadi kredit yang harus diselesaikan manual.`
+          : ""),
+      confirmLabel: "Batalkan order",
+      tone: "danger",
+    });
     if (!ok) return;
     const { error } = await supabase.from("orders").update({ status: "cancelled" }).eq("id", order.id);
     if (error) return setError(`Gagal membatalkan: ${error.message}`);

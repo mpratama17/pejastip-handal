@@ -3,6 +3,7 @@
 import { useEffect, useState } from "react";
 import Link from "next/link";
 import { supabase } from "@/lib/supabase/client";
+import { useConfirm } from "@/components/admin/confirm-dialog";
 import { EVENT_STATUS_MAP } from "@/components/status-chip";
 import { EVENT_TYPE_LABEL, isBeforeOpen, isPastClose } from "@/lib/labels";
 import { formatDateID } from "@/lib/format";
@@ -58,6 +59,7 @@ export default function AdminEventsPage() {
   const [editing, setEditing] = useState<string | null>(null);
   const [error, setError] = useState<string | null>(null);
   const [now] = useState(Date.now);
+  const confirm = useConfirm();
 
   async function loadEvents() {
     const { data, error } = await supabase.from("events").select("*").order("created_at", { ascending: false });
@@ -77,8 +79,13 @@ export default function AdminEventsPage() {
 
   async function handleStatusChange(ev: EventRow, newStatus: EventStatus) {
     const note = CASCADE_NOTE[newStatus];
-    if (note && !window.confirm(`Ubah "${ev.name}" menjadi ${EVENT_STATUS_MAP[newStatus].label}?\n\n${note}`)) {
-      return loadEvents(); // kembalikan <select> ke nilai semula
+    if (note) {
+      const ok = await confirm({
+        title: `Ubah status jadi ${EVENT_STATUS_MAP[newStatus].label}?`,
+        body: `${ev.name}\n\n${note}`,
+        confirmLabel: "Ubah status",
+      });
+      if (!ok) return loadEvents(); // kembalikan <select> ke nilai semula
     }
     setError(null);
     // Selalu lewat RPC (bukan update langsung) — supaya cascade R14 jalan di DB.
