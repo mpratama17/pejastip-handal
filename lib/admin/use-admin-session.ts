@@ -17,8 +17,14 @@ export function useAdminSession() {
     let cancelled = false;
     async function apply(s: Session | null) {
       if (!s) return setSession(null);
-      const { data } = await supabase.rpc("is_admin");
+      const { data, error } = await supabase.rpc("is_admin");
       if (cancelled) return;
+      // Gagal cek (jaringan dsb.) ≠ bukan admin: jangan logout admin asli.
+      // RLS tetap menolak data kalau ternyata bukan admin.
+      if (error) {
+        console.error("[admin] cek is_admin gagal", error);
+        return setSession(s);
+      }
       if (data !== true) {
         sessionStorage.setItem(NOT_ADMIN_FLAG, "1");
         await supabase.auth.signOut();
