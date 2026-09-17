@@ -39,6 +39,21 @@ export type Database = {
   }
   public: {
     Tables: {
+      admins: {
+        Row: {
+          created_at: string
+          user_id: string
+        }
+        Insert: {
+          created_at?: string
+          user_id: string
+        }
+        Update: {
+          created_at?: string
+          user_id?: string
+        }
+        Relationships: []
+      }
       book_requests: {
         Row: {
           created_at: string
@@ -387,6 +402,7 @@ export type Database = {
           notes: string | null
           order_id: string
           paid_at: string | null
+          proof_purged_at: string | null
           proof_url: string | null
           reviewed_at: string | null
           status: Database["public"]["Enums"]["payment_review_status"]
@@ -400,6 +416,7 @@ export type Database = {
           notes?: string | null
           order_id: string
           paid_at?: string | null
+          proof_purged_at?: string | null
           proof_url?: string | null
           reviewed_at?: string | null
           status?: Database["public"]["Enums"]["payment_review_status"]
@@ -413,6 +430,7 @@ export type Database = {
           notes?: string | null
           order_id?: string
           paid_at?: string | null
+          proof_purged_at?: string | null
           proof_url?: string | null
           reviewed_at?: string | null
           status?: Database["public"]["Enums"]["payment_review_status"]
@@ -582,12 +600,32 @@ export type Database = {
           order_id: string
         }[]
       }
+      admin_mark_proofs_purged: {
+        Args: { p_payment_ids: string[] }
+        Returns: number
+      }
+      admin_proof_purge_candidates: {
+        Args: never
+        Returns: {
+          order_code: string
+          payment_id: string
+          proof_path: string
+          size_bytes: number
+        }[]
+      }
       admin_review_payment: {
         Args: {
           p_amount_idr: number
           p_approve: boolean
           p_note: string
           p_payment_id: string
+        }
+        Returns: undefined
+      }
+      admin_set_event_status: {
+        Args: {
+          p_event_id: string
+          p_new_status: Database["public"]["Enums"]["event_status"]
         }
         Returns: undefined
       }
@@ -600,13 +638,6 @@ export type Database = {
       }
       admin_update_order_items: {
         Args: { p_items: Json; p_order_id: string }
-        Returns: undefined
-      }
-      admin_set_event_status: {
-        Args: {
-          p_event_id: string
-          p_new_status: Database["public"]["Enums"]["event_status"]
-        }
         Returns: undefined
       }
       admin_update_shipment: {
@@ -743,8 +774,8 @@ export type Database = {
         Args: { p_object_name: string }
         Returns: boolean
       }
-      normalize_whatsapp: { Args: { p_input: string }; Returns: string }
       is_admin: { Args: never; Returns: boolean }
+      normalize_whatsapp: { Args: { p_input: string }; Returns: string }
       request_ip: { Args: never; Returns: string }
       shipping_customer_id: {
         Args: { p_code: string; p_whatsapp: string }
