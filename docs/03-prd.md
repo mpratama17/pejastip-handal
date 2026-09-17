@@ -51,7 +51,7 @@ Format: setiap modul berisi requirement (R) dan acceptance criteria (AC). AC dit
 - **AC-2**: Dua customer merebut stok terakhir ready stock secara bersamaan → tepat satu yang berhasil (validasi dalam transaksi DB).
 - **AC-3**: Nomor `0812…`, `62812…`, `+62812…` untuk orang yang sama → jatuh ke satu record customer.
 - **AC-4**: Refresh halaman sukses tidak membuat order kedua.
-- **AC-5**: Customer lama (nomor WA dikenal) → order menempel ke record lama; kode customer lama ditampilkan lagi, tidak dibuat kode baru.
+- **AC-5**: Customer lama (nomor WA dikenal) → order menempel ke record lama; tidak dibuat kode baru, dan kode lama **tidak** ditampilkan (nomor WA bukan rahasia; kode = kunci tracker & Form Kirim) — customer diarahkan memakai kode yang sudah dimiliki atau chat admin. *(Direvisi 2026-09-17 setelah security review.)*
 - **AC-6**: Semua qty < 1, harga hasil manipulasi klien, atau `event_item` non-aktif → ditolak server-side; harga selalu diambil dari DB, tidak pernah dari payload klien.
 
 ### 3.2 Pembayaran (upload bukti + verifikasi)
