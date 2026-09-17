@@ -16,7 +16,7 @@ function jacketFor(seed: string) {
   return JACKETS[h % JACKETS.length];
 }
 
-const frame = "aspect-[2/3] w-full rounded-sm border-[1.5px] border-ink";
+const frame = (compact: boolean) => `aspect-[2/3] w-full border-[1.5px] border-ink ${compact ? "rounded-[3px]" : "rounded-sm"}`;
 
 export function BookCover({
   title,
@@ -35,14 +35,14 @@ export function BookCover({
   if (coverUrl) {
     return (
       // eslint-disable-next-line @next/next/no-img-element -- static export: tanpa image optimizer
-      <img src={coverUrl} alt={`Sampul ${title}`} loading="lazy" className={`${frame} bg-surface object-cover ${className}`} />
+      <img src={coverUrl} alt={`Sampul ${title}`} loading="lazy" className={`${frame(compact)} bg-surface object-cover ${className}`} />
     );
   }
   return (
     <div
       role="img"
       aria-label={`Sampul ${title}`}
-      className={`${frame} flex flex-col justify-between text-ink ${compact ? "p-1" : "p-2.5"} ${className}`}
+      className={`${frame(compact)} flex flex-col justify-between text-ink ${compact ? "p-1" : "p-2.5"} ${className}`}
       style={{ background: jacketFor(title) }}
     >
       <span className={`h-[3px] rounded-full bg-ink ${compact ? "w-1/2" : "w-6"}`} />

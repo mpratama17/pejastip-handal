@@ -5,7 +5,8 @@ import Link from "next/link";
 import { useSearchParams } from "next/navigation";
 import { supabase } from "@/lib/supabase/client";
 import { formatIDR, formatDateID } from "@/lib/format";
-import { BOOK_FORMAT_LABEL, EVENT_TYPE_LABEL, isAcceptingOrders } from "@/lib/labels";
+import { BOOK_FORMAT_LABEL, isAcceptingOrders } from "@/lib/labels";
+import { TypeChip } from "@/components/type-chip";
 import { waLink, type BankAccount } from "@/lib/site-settings";
 import { BookCover } from "@/components/public/book-cover";
 import { DaisySticker, StarSticker } from "@/components/public/stickers";
@@ -157,17 +158,30 @@ function OrderForm() {
 
   return (
     <div className="mx-auto max-w-2xl px-4 py-10">
-      <h1 className="font-display text-3xl font-semibold">Form order</h1>
+      <h1 className="font-display text-3xl font-bold">Form order</h1>
 
       <div className="mt-5" aria-live="polite">
         <p className="text-sm text-ink-muted">
           Langkah {step} dari {STEPS.length} · <span className="font-medium text-ink">{STEPS[step - 1]}</span>
         </p>
-        <div className="mt-2 flex gap-1.5">
-          {STEPS.map((label, i) => (
-            <div key={label} className={`h-1.5 flex-1 rounded-full ${i < step ? "btn btn-primary press" : "bg-surface-sunken"}`} />
-          ))}
-        </div>
+        <ol className="mt-2 flex gap-2">
+          {STEPS.map((label, i) => {
+            const n = i + 1;
+            const done = n < step;
+            return (
+              <li
+                key={label}
+                aria-current={n === step ? "step" : undefined}
+                title={label}
+                className={`flex h-8 w-8 items-center justify-center rounded-full border border-ink font-display text-sm font-extrabold ${
+                  done ? "bg-type-ready" : n === step ? "bg-primary" : "bg-surface text-ink-faint"
+                }`}
+              >
+                {done ? "✓" : n}
+              </li>
+            );
+          })}
+        </ol>
       </div>
 
       {loadError && (
@@ -176,7 +190,7 @@ function OrderForm() {
         </p>
       )}
 
-      <div className="mt-6 rounded-lg border border-border bg-surface p-5 sm:p-6">
+      <div className="card mt-6 p-5 sm:p-6">
         {step === 1 && (
           <div className="flex flex-col gap-4">
             <label className="block text-sm font-medium">
@@ -221,13 +235,15 @@ function OrderForm() {
                 type="button"
                 onClick={() => chooseEvent(ev.id)}
                 aria-pressed={eventId === ev.id}
-                className={`rounded-md border p-4 text-left transition-colors ${
-                  eventId === ev.id ? "border-ink bg-primary-soft" : "border-border"
-                }`}
+                className={`card press p-4 text-left ${eventId === ev.id ? "bg-primary-soft" : ""}`}
               >
-                <p className="font-semibold">{ev.name}</p>
+                <span className="flex items-center gap-2">
+                  <TypeChip type={ev.type} />
+                  {eventId === ev.id && <span className="text-xs font-bold">✓ dipilih</span>}
+                </span>
+                <p className="mt-1.5 font-bold">{ev.name}</p>
                 <p className="mt-1 text-xs text-ink-muted">
-                  {EVENT_TYPE_LABEL[ev.type]} · DP {Number(ev.dp_percent)}%
+                  DP {Number(ev.dp_percent)}%
                   {ev.eta_note ? ` · tiba ${ev.eta_note}` : ""}
                   {ev.closes_at ? ` · tutup ${formatDateID(ev.closes_at)}` : ""}
                 </p>
@@ -243,7 +259,7 @@ function OrderForm() {
               placeholder="Cari judul, penulis, atau ISBN"
               value={search}
               onChange={(e) => setSearch(e.target.value)}
-              className={INPUT.replace("mt-1 ", "")}
+              className={`${INPUT.replace("mt-1 ", "")} rounded-full`}
             />
             {catalogue === null ? (
               <p className="py-8 text-center text-sm text-ink-muted">Memuat katalog…</p>
@@ -254,19 +270,23 @@ function OrderForm() {
                   const soldOut = r.stock_left === 0;
                   return (
                     <li key={r.event_item_id} className="flex items-center gap-3 py-3">
-                      <div className="w-11 shrink-0">
+                      <div className="w-12 shrink-0">
                         <BookCover compact title={r.title} coverUrl={r.cover_url} />
                       </div>
                       <div className="min-w-0 flex-1">
-                        <p className="text-sm font-medium leading-snug">{r.title}</p>
+                        <p className="text-sm font-bold leading-snug">{r.title}</p>
                         <p className="text-xs text-ink-muted">
                           {[r.author, BOOK_FORMAT_LABEL[r.format]].filter(Boolean).join(" · ")}
                         </p>
-                        <p className="mt-0.5 text-sm font-semibold tabular-nums text-accent-ink">
+                        <p className="mt-1 flex items-center gap-2 text-sm font-bold tabular-nums text-accent-ink">
                           {formatIDR(r.price_idr)}
                           {r.stock_left !== null && (
-                            <span className={`ml-2 text-xs font-normal ${soldOut ? "text-danger" : "text-ink-muted"}`}>
-                              {soldOut ? "Habis" : `sisa ${r.stock_left}`}
+                            <span
+                              className={`rounded-full border-[1.5px] border-ink px-2 py-0.5 text-xs font-bold text-ink ${
+                                soldOut ? "bg-danger-soft text-danger" : "bg-type-ready"
+                              }`}
+                            >
+                              {soldOut ? "Habis" : `Sisa ${r.stock_left}`}
                             </span>
                           )}
                         </p>
@@ -303,19 +323,17 @@ function OrderForm() {
                     type="button"
                     onClick={() => setPaymentType(t)}
                     aria-pressed={paymentType === t}
-                    className={`rounded-md border p-3 text-left text-sm ${
-                      paymentType === t ? "border-ink bg-primary-soft" : "border-border"
-                    }`}
+                    className={`card press p-3 text-left text-sm ${paymentType === t ? "bg-primary-soft" : ""}`}
                   >
-                    <span className="block font-semibold">{t === "dp" ? `DP ${dpPercent}%` : "Lunas"}</span>
-                    <span className="mt-0.5 block tabular-nums text-ink-muted">
+                    <span className="block font-bold">{t === "dp" ? `DP ${dpPercent}%` : "Lunas"}</span>
+                    <span className="mt-0.5 block font-bold tabular-nums text-accent-ink">
                       {formatIDR(t === "dp" ? Math.ceil((subtotal * dpPercent) / 100) : subtotal)}
                     </span>
                   </button>
                 ))}
               </div>
             </fieldset>
-            <p className="rounded-md bg-surface-sunken p-3 text-sm">
+            <p className="rounded-md border border-ink bg-sky-soft p-3 text-sm">
               {paymentType === "dp"
                 ? "Sisa tagihan dilunasi saat buku tiba di Indonesia — kami kabari lewat WhatsApp."
                 : "Tidak ada tagihan lagi setelah pembayaran ini terverifikasi (di luar ongkir)."}
@@ -337,7 +355,7 @@ function OrderForm() {
               <dt className="text-ink-muted">Batch</dt>
               <dd>{selectedEvent?.name}</dd>
             </dl>
-            <div className="rounded-md bg-surface-sunken p-4 text-sm">
+            <div className="rounded-md border border-ink bg-surface-sunken p-4 text-sm">
               {cartLines.map((l) => (
                 <div key={l.row.event_item_id} className="flex justify-between gap-3 py-0.5">
                   <span>
@@ -346,11 +364,11 @@ function OrderForm() {
                   <span className="tabular-nums">{formatIDR(l.row.price_idr * l.qty)}</span>
                 </div>
               ))}
-              <div className="mt-2 flex justify-between border-t-1 border-line pt-2 font-semibold">
+              <div className="mt-2 flex justify-between border-t-1 border-line pt-2 font-bold">
                 <span>Total</span>
                 <span className="tabular-nums">{formatIDR(subtotal)}</span>
               </div>
-              <div className="mt-1 flex justify-between font-semibold text-accent-ink">
+              <div className="mt-1 flex justify-between font-bold text-accent-ink">
                 <span>Bayar sekarang ({paymentType === "dp" ? `DP ${dpPercent}%` : "lunas"})</span>
                 <span className="tabular-nums">{formatIDR(nominalDue)}</span>
               </div>
@@ -360,7 +378,7 @@ function OrderForm() {
                 type="checkbox"
                 checked={agreed}
                 onChange={(e) => setAgreed(e.target.checked)}
-                className="mt-0.5 h-4 w-4 accent-[var(--color-primary)]"
+                className="mt-0.5 h-4 w-4"
               />
               <span>
                 Saya sudah membaca{" "}
@@ -381,7 +399,7 @@ function OrderForm() {
 
         <div className="mt-6 flex gap-3">
           {step > 1 && (
-            <button type="button" onClick={() => go(-1)} className="rounded-md border border-border px-4 py-3 text-sm font-semibold">
+            <button type="button" onClick={() => go(-1)} className="btn btn-secondary press px-5 py-3 text-sm">
               Kembali
             </button>
           )}
@@ -389,7 +407,7 @@ function OrderForm() {
             <button
               type="button"
               onClick={() => go(1)}
-              className="btn btn-primary press flex-1 px-4 py-3 text-sm font-semibold"
+              className="btn btn-primary press flex-1 px-4 py-3 text-sm"
             >
               Lanjut
             </button>
@@ -398,7 +416,7 @@ function OrderForm() {
               type="button"
               onClick={submit}
               disabled={submitting}
-              className="btn btn-primary press flex-1 px-4 py-3 text-sm font-semibold disabled:opacity-60"
+              className="btn btn-primary press flex-1 px-4 py-3 text-sm"
             >
               {submitting ? "Mengirim…" : "Kirim Order"}
             </button>
@@ -421,13 +439,13 @@ function QtyStepper({
   onChange: (q: number) => void;
 }) {
   const btn =
-    "flex h-9 w-9 items-center justify-center rounded-md border border-border text-lg leading-none disabled:opacity-30";
+    "flex h-8 w-8 items-center justify-center rounded-full text-lg leading-none hover:bg-primary-soft disabled:opacity-30 disabled:hover:bg-transparent";
   return (
-    <div className="flex shrink-0 items-center gap-1.5">
+    <div className="flex shrink-0 items-center gap-0.5 rounded-full border border-ink bg-surface p-0.5">
       <button type="button" aria-label={`Kurangi ${label}`} onClick={() => onChange(qty - 1)} disabled={qty <= 0} className={btn}>
         −
       </button>
-      <span className="w-6 text-center text-sm tabular-nums" aria-live="polite">
+      <span className="w-6 text-center text-sm font-bold tabular-nums" aria-live="polite">
         {qty}
       </span>
       <button
@@ -457,9 +475,9 @@ function OrderSuccess({ result }: { result: OrderResult }) {
 
   return (
     <div className="mx-auto max-w-2xl px-4 py-10">
-      <div className="card relative overflow-hidden bg-primary p-6 text-center shadow-hard sm:p-8">
-        <StarSticker className="absolute -left-3 -top-3 w-14" />
-        <DaisySticker className="absolute -bottom-5 -right-4 w-16" />
+      <div className="card relative bg-primary p-6 text-center shadow-hard sm:p-8">
+        <StarSticker className="absolute -left-5 -top-5 w-14" />
+        <DaisySticker className="absolute -bottom-6 -right-6 w-16" />
         {code ? (
           <>
             <p className="text-sm text-ink/75">Order {result.order_code} tercatat. Kode pelacakanmu:</p>
