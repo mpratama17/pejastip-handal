@@ -42,12 +42,12 @@ export function BookCover({
     <div
       role="img"
       aria-label={`Sampul ${title}`}
-      className={`${frame} flex flex-col justify-between p-2.5 text-ink ${className}`}
+      className={`${frame} flex flex-col justify-between text-ink ${compact ? "p-1" : "p-2.5"} ${className}`}
       style={{ background: jacketFor(title) }}
     >
-      <span className="h-[3px] w-6 rounded-full bg-ink" />
+      <span className={`h-[3px] rounded-full bg-ink ${compact ? "w-1/2" : "w-6"}`} />
       {compact ? (
-        <span className="font-display text-lg font-extrabold leading-none">{title.charAt(0)}</span>
+        <span className="font-display text-sm font-extrabold leading-none">{title.charAt(0)}</span>
       ) : (
         <div>
           <p className="font-display text-[0.85rem] font-extrabold leading-tight [text-wrap:balance]">{title}</p>
