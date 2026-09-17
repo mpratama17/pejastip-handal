@@ -576,6 +576,17 @@ export type Database = {
         }
         Returns: undefined
       }
+      admin_set_item_status: {
+        Args: {
+          p_item_id: string
+          p_status: Database["public"]["Enums"]["item_shipping_status"]
+        }
+        Returns: undefined
+      }
+      admin_update_order_items: {
+        Args: { p_items: Json; p_order_id: string }
+        Returns: undefined
+      }
       admin_set_event_status: {
         Args: {
           p_event_id: string

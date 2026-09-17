@@ -8,7 +8,7 @@ const PAYMENT_STATE_MAP: Record<string, { label: string; className: string }> = 
   overpaid: { label: "Lebih Bayar", className: "bg-info-soft text-info" },
 };
 
-const SHIPPING_STATUS_MAP: Record<string, { label: string; className: string }> = {
+export const SHIPPING_STATUS_MAP: Record<string, { label: string; className: string }> = {
   not_shipped: { label: "Belum Dikirim", className: "bg-surface-sunken text-ink-muted" },
   shipped_to_indo: { label: "Di Perjalanan", className: "bg-info-soft text-info" },
   arrived_in_indo: { label: "Tiba di Admin", className: "bg-primary-soft text-primary" },
