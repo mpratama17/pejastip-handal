@@ -7,6 +7,7 @@ import { supabase } from "@/lib/supabase/client";
 import { formatIDR, formatDateID } from "@/lib/format";
 import { useSiteSettings, waLink } from "@/lib/site-settings";
 import { StatusChip } from "@/components/status-chip";
+import { StarSticker } from "@/components/public/stickers";
 import { PaymentProofUpload } from "@/components/public/payment-proof-upload";
 import type { Database } from "@/types/database";
 
@@ -76,10 +77,10 @@ function Tracker() {
 
   return (
     <div className="mx-auto max-w-2xl px-4 py-10">
-      <h1 className="font-display text-3xl font-semibold">Lacak order</h1>
+      <h1 className="font-display text-3xl font-bold">Lacak order</h1>
       <p className="mt-1 text-sm text-ink-muted">Masukkan kode pelacakan yang muncul setelah kamu order.</p>
 
-      <form onSubmit={handleSubmit} className="mt-6 flex flex-col gap-3 rounded-lg border border-border bg-surface p-5 sm:flex-row">
+      <form onSubmit={handleSubmit} className="card mt-6 flex flex-col gap-3 p-4 sm:flex-row">
         <label className="flex-1">
           <span className="sr-only">Kode pelacakan</span>
           <input
@@ -90,20 +91,20 @@ function Tracker() {
             autoCapitalize="characters"
             autoComplete="off"
             spellCheck={false}
-            className="w-full rounded-md border border-border px-3 py-3 font-display text-lg uppercase tracking-wider placeholder:font-sans placeholder:text-sm placeholder:normal-case placeholder:tracking-normal"
+            className="w-full rounded-full border border-ink px-5 py-3 font-display text-lg font-extrabold uppercase tracking-wider placeholder:font-sans placeholder:text-sm placeholder:font-normal placeholder:normal-case placeholder:tracking-normal"
           />
         </label>
         <button
           type="submit"
           disabled={loading}
-          className="btn btn-primary press px-6 py-3 text-sm font-semibold disabled:opacity-60"
+          className="btn btn-primary press px-6 py-3 text-sm"
         >
           {loading ? "Mencari…" : "Lacak"}
         </button>
       </form>
 
       {error && (
-        <div className="mt-4 rounded-lg border border-danger/30 bg-danger-soft p-4 text-sm text-danger" role="alert">
+        <div className="mt-4 rounded-lg border border-ink bg-danger-soft p-4 text-sm text-danger" role="alert">
           {error}
           {settings?.wa_admin_number && (
             <a
@@ -119,9 +120,10 @@ function Tracker() {
       )}
 
       {orders?.length === 0 && (
-        <div className="mt-6 rounded-lg border border-border bg-surface p-8 text-center">
-          <p className="font-medium">Belum ada order aktif untuk kode ini.</p>
-          <Link href="/ongoing" className="mt-2 inline-block text-sm font-medium text-link hover:underline">
+        <div className="card relative mt-6 p-8 text-center">
+          <StarSticker className="absolute -right-4 -top-4 w-12" />
+          <p className="font-bold">Belum ada order aktif untuk kode ini.</p>
+          <Link href="/ongoing" className="btn btn-secondary press mt-3 px-4 py-2 text-sm">
             Lihat batch yang sedang buka
           </Link>
         </div>
@@ -134,10 +136,10 @@ function Tracker() {
           const cancelled = o.order_status === "cancelled";
           const owes = !cancelled && o.balance_idr > 0;
           return (
-            <article key={o.order_id} className="rounded-lg border border-border bg-surface p-5 sm:p-6">
+            <article key={o.order_id} className="card p-5 sm:p-6">
               <header className="flex items-start justify-between gap-3">
                 <div>
-                  <h2 className="font-display text-xl font-semibold">{o.order_code}</h2>
+                  <h2 className="font-display text-xl font-bold">{o.order_code}</h2>
                   <p className="text-sm text-ink-muted">
                     {o.event_name} · {formatDateID(o.created_at)}
                   </p>
@@ -173,7 +175,7 @@ function Tracker() {
                   )}
                 </p>
               ) : (
-                <dl className="mt-4 grid grid-cols-3 gap-2 rounded-md bg-surface-sunken p-3 text-sm">
+                <dl className="mt-4 grid grid-cols-3 gap-2 rounded-md border border-ink bg-surface-sunken p-3 text-sm">
                   <div>
                     <dt className="text-xs text-ink-muted">Total</dt>
                     <dd className="tabular-nums">{formatIDR(o.total_idr)}</dd>
@@ -219,7 +221,7 @@ function Tracker() {
                   </summary>
                   <ul className="mt-2 flex flex-col gap-2">
                     {payments.map((p, i) => (
-                      <li key={i} className="rounded-md bg-surface-sunken p-2.5">
+                      <li key={i} className="rounded-md border-[1.5px] border-ink bg-surface-sunken p-2.5">
                         <div className="flex justify-between gap-2">
                           <span className="tabular-nums">
                             {formatIDR(p.amount_idr)} <span className="text-ink-faint">· {formatDateID(p.created_at)}</span>
@@ -234,8 +236,8 @@ function Tracker() {
               )}
 
               {o.admin_notes && (
-                <div className="mt-3 rounded-md border-l-2 border-ink bg-primary-soft/50 p-3 text-sm">
-                  <p className="text-xs font-semibold text-link">Catatan admin</p>
+                <div className="mt-3 rounded-md border border-ink bg-sky-soft p-3 text-sm">
+                  <p className="text-xs font-bold">Catatan admin</p>
                   <p className="mt-0.5 whitespace-pre-line">{o.admin_notes}</p>
                 </div>
               )}
@@ -254,7 +256,7 @@ function Tracker() {
                     <button
                       type="button"
                       onClick={() => setUploadFor(o.order_id)}
-                      className="text-sm font-semibold text-link hover:underline"
+                      className="btn btn-secondary press px-4 py-2 text-sm"
                     >
                       Upload bukti pembayaran
                     </button>
