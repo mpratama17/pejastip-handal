@@ -53,7 +53,7 @@ export default function AdminBooksPage() {
       : key === "author" ? i.books.author
       : key === "format" ? BOOK_FORMAT_LABEL[i.books.format]
       : key === "price" ? i.price_idr
-      : key === "stock" ? i.stock            // null = stok tak terbatas, jatuh ke bawah
+      : key === "stock" ? (i.stock ?? Number.POSITIVE_INFINITY) // ∞ itu stok terbanyak, bukan data kosong
       : i.books.created_at,
     );
   }, [items, search, sort]);
@@ -99,6 +99,10 @@ export default function AdminBooksPage() {
     if (!eventId) return;
     setManualError(null);
     setManualOk(null);
+    // Dikunci sebelum lookup ISBN, bukan sesudah: lookup-nya sudah satu
+    // perjalanan ke server, dan tombol yang masih hidup selama itu bisa
+    // menjalankan handler ini dua kali.
+    setSavingManual(true);
 
     // import_catalog_csv memakai ISBN sebagai kunci: kalau ISBN-nya sudah ada,
     // buku itu yang di-update — judul, penulis, harga ikut tertimpa di SEMUA
@@ -123,11 +127,13 @@ export default function AdminBooksPage() {
           confirmLabel: "Ya, ubah buku itu",
           tone: "danger",
         });
-        if (!ok) return;
+        if (!ok) {
+          setSavingManual(false);
+          return;
+        }
       }
     }
 
-    setSavingManual(true);
     const { data: rows, error } = await supabase.rpc("import_catalog_csv", {
       p_event_id: eventId,
       p_rows: [
