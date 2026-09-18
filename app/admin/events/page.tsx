@@ -143,7 +143,10 @@ export default function AdminEventsPage() {
         <h1 className="font-display text-xl font-bold text-ink">Event</h1>
         {editing !== "new" && (
           <button
-            onClick={() => setEditing("new")}
+            onClick={() => {
+              setError(null); // jangan tinggalkan error aksi sebelumnya menggantung di bawah tabel
+              setEditing("new");
+            }}
             className="btn btn-primary press px-4 py-2 text-sm font-semibold"
           >
             + Event Baru
