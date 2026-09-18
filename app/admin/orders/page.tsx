@@ -1,6 +1,6 @@
 "use client";
 
-import { useEffect, useMemo, useState } from "react";
+import { useCallback, useEffect, useMemo, useState } from "react";
 import Link from "next/link";
 import { supabase } from "@/lib/supabase/client";
 import { StatusChip } from "@/components/status-chip";
@@ -15,6 +15,14 @@ type OrderRow = Database["public"]["Tables"]["orders"]["Row"] & {
   events: { name: string } | null;
 };
 
+// Order yang belum dibayar tetap menahan stok (get_catalogue menghitung semua
+// order non-batal). Itu disengaja — mencegah buku terakhir dijanjikan ke dua
+// orang. Konsekuensinya order mangkrak menahan stok diam-diam, jadi di sini
+// ditandai supaya kelihatan dan bisa dibatalkan; membatalkan melepas stoknya.
+const HARI_MANGKRAK = 3;
+
+const umurHari = (iso: string, now: number) => Math.floor((now - new Date(iso).getTime()) / 86_400_000);
+
 export default function AdminOrdersPage() {
   const [orders, setOrders] = useState<OrderRow[]>([]);
   const [paymentStates, setPaymentStates] = useState<Record<string, PaymentState>>({});
@@ -23,6 +31,7 @@ export default function AdminOrdersPage() {
   const [paymentFilter, setPaymentFilter] = useState("");
   const [search, setSearch] = useState("");
   const [loading, setLoading] = useState(true);
+  const [now] = useState(Date.now);
 
   useEffect(() => {
     async function load() {
@@ -47,10 +56,23 @@ export default function AdminOrdersPage() {
     load();
   }, []);
 
+  // Mangkrak = masih pending, belum ada pembayaran masuk, dan sudah lewat batas.
+  const isMangkrak = useCallback(
+    (o: OrderRow) =>
+      o.status === "pending" &&
+      (paymentStates[o.id]?.payment_state ?? "not_paid") === "not_paid" &&
+      umurHari(o.created_at, now) >= HARI_MANGKRAK,
+    [paymentStates, now],
+  );
+
+  const jumlahMangkrak = orders.filter(isMangkrak).length;
+
   const filtered = useMemo(() => {
     return orders.filter((o) => {
       if (eventFilter && o.event_id !== eventFilter) return false;
-      if (paymentFilter && paymentStates[o.id]?.payment_state !== paymentFilter) return false;
+      if (paymentFilter === "mangkrak") {
+        if (!isMangkrak(o)) return false;
+      } else if (paymentFilter && paymentStates[o.id]?.payment_state !== paymentFilter) return false;
       if (search) {
         const q = search.toLowerCase();
         const haystack = `${o.order_code} ${o.customers?.full_name ?? ""} ${o.customers?.code ?? ""}`.toLowerCase();
@@ -58,7 +80,7 @@ export default function AdminOrdersPage() {
       }
       return true;
     });
-  }, [orders, eventFilter, paymentFilter, search, paymentStates]);
+  }, [orders, eventFilter, paymentFilter, search, paymentStates, isMangkrak]);
 
   return (
     <div>
@@ -98,6 +120,7 @@ export default function AdminOrdersPage() {
           <option value="partially_paid">DP Diterima</option>
           <option value="fully_paid">Lunas</option>
           <option value="overpaid">Lebih Bayar</option>
+          {jumlahMangkrak > 0 && <option value="mangkrak">Mangkrak ({jumlahMangkrak})</option>}
         </select>
       </div>
 
@@ -129,7 +152,17 @@ export default function AdminOrdersPage() {
                   </td>
                   <td className="px-4 py-2 text-ink-muted">{o.events?.name ?? "—"}</td>
                   <td className="px-4 py-2">
-                    {ps ? <StatusChip kind="payment" status={ps.payment_state ?? "not_paid"} /> : "—"}
+                    <span className="flex flex-wrap items-center gap-1.5">
+                      {ps ? <StatusChip kind="payment" status={ps.payment_state ?? "not_paid"} /> : "—"}
+                      {isMangkrak(o) && (
+                        <span
+                          title="Belum dibayar tapi masih menahan stok. Batalkan kalau sudah pasti tidak jadi."
+                          className="inline-flex whitespace-nowrap rounded-full border-[1.5px] border-ink bg-warning-soft px-2 py-0.5 text-xs font-bold text-warning"
+                        >
+                          Mangkrak {umurHari(o.created_at, now)} hari
+                        </span>
+                      )}
+                    </span>
                   </td>
                   <td className="px-4 py-2 text-right tabular-nums text-ink">{formatIDR(o.total_idr)}</td>
                   <td className="px-4 py-2 text-ink-muted">{formatDateID(o.created_at)}</td>
