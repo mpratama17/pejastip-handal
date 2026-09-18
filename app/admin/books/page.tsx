@@ -6,6 +6,7 @@ import { formatIDR } from "@/lib/format";
 import { parseSimpleCSV } from "@/lib/csv";
 import { BOOK_FORMAT_LABEL } from "@/lib/labels";
 import { compressImage } from "@/lib/compress-image";
+import { useConfirm } from "@/components/admin/confirm-dialog";
 import { BookCover } from "@/components/public/book-cover";
 import type { Database } from "@/types/database";
 
@@ -37,6 +38,10 @@ export default function AdminBooksPage() {
   });
   const [savingManual, setSavingManual] = useState(false);
   const [manualError, setManualError] = useState<string | null>(null);
+
+  const [editing, setEditing] = useState<string | null>(null);
+  const [rowError, setRowError] = useState<string | null>(null);
+  const confirm = useConfirm();
 
   useEffect(() => {
     supabase
@@ -123,6 +128,40 @@ export default function AdminBooksPage() {
 
   async function toggleActive(item: EventItemWithBook) {
     await supabase.from("event_items").update({ is_active: !item.is_active }).eq("id", item.id);
+    loadItems(eventId);
+  }
+
+  // Harga di order lama tidak ikut berubah: order_items.unit_price_idr adalah snapshot.
+  async function saveRow(item: EventItemWithBook, price: number, stock: number | null) {
+    setRowError(null);
+    const { error } = await supabase
+      .from("event_items")
+      .update({ price_idr: price, stock })
+      .eq("id", item.id);
+    if (error) return setRowError(`Gagal simpan ${item.books.title}: ${error.message}`);
+    setEditing(null);
+    loadItems(eventId);
+  }
+
+  async function removeRow(item: EventItemWithBook) {
+    const ok = await confirm({
+      title: "Hapus buku dari batch ini?",
+      body: `${item.books.title}\n\nBuku tetap ada di daftar buku, hanya dikeluarkan dari batch ini.`,
+      confirmLabel: "Hapus",
+      tone: "danger",
+    });
+    if (!ok) return;
+    setRowError(null);
+    const { error } = await supabase.from("event_items").delete().eq("id", item.id);
+    // 23503 = masih dipakai order_items. Itu memang harus ditolak.
+    if (error) {
+      setRowError(
+        error.code === "23503"
+          ? `"${item.books.title}" sudah masuk order pelanggan, jadi tidak bisa dihapus. Set Nonaktif saja supaya hilang dari katalog.`
+          : `Gagal hapus: ${error.message}`,
+      );
+      return;
+    }
     loadItems(eventId);
   }
 
@@ -270,34 +309,56 @@ export default function AdminBooksPage() {
                   <th className="px-4 py-2 text-right font-medium">Harga</th>
                   <th className="px-4 py-2 text-right font-medium">Stok</th>
                   <th className="px-4 py-2 font-medium">Aktif</th>
+                  <th className="px-4 py-2 text-right font-medium">Aksi</th>
                 </tr>
               </thead>
               <tbody>
-                {items.map((item) => (
-                  <tr key={item.id} className="border-t-1 border-line">
-                    <td className="px-4 py-2">
-                      <CoverCell book={item.books} onChanged={() => loadItems(eventId)} />
-                    </td>
-                    <td className="px-4 py-2 font-medium text-ink">{item.books.title}</td>
-                    <td className="px-4 py-2 text-ink-muted">{item.books.author ?? "—"}</td>
-                    <td className="px-4 py-2 text-ink-muted">{BOOK_FORMAT_LABEL[item.books.format]}</td>
-                    <td className="px-4 py-2 text-right tabular-nums text-ink">{formatIDR(item.price_idr)}</td>
-                    <td className="px-4 py-2 text-right tabular-nums text-ink">{item.stock ?? "∞"}</td>
-                    <td className="px-4 py-2">
-                      <button
-                        onClick={() => toggleActive(item)}
-                        className={`rounded-full px-2.5 py-1 text-xs font-semibold ${
-                          item.is_active ? "bg-success-soft text-success" : "bg-surface-sunken text-ink-muted"
-                        }`}
-                      >
-                        {item.is_active ? "Aktif" : "Nonaktif"}
-                      </button>
-                    </td>
-                  </tr>
-                ))}
+                {items.map((item) =>
+                  editing === item.id ? (
+                    <EditRow key={item.id} item={item} onSave={saveRow} onCancel={() => setEditing(null)} />
+                  ) : (
+                    <tr key={item.id} className="border-t-1 border-line">
+                      <td className="px-4 py-2">
+                        <CoverCell book={item.books} onChanged={() => loadItems(eventId)} />
+                      </td>
+                      <td className="px-4 py-2 font-medium text-ink">{item.books.title}</td>
+                      <td className="px-4 py-2 text-ink-muted">{item.books.author ?? "—"}</td>
+                      <td className="px-4 py-2 text-ink-muted">{BOOK_FORMAT_LABEL[item.books.format]}</td>
+                      <td className="px-4 py-2 text-right tabular-nums text-ink">{formatIDR(item.price_idr)}</td>
+                      <td className="px-4 py-2 text-right tabular-nums text-ink">{item.stock ?? "∞"}</td>
+                      <td className="px-4 py-2">
+                        <button
+                          onClick={() => toggleActive(item)}
+                          className={`rounded-full px-2.5 py-1 text-xs font-semibold ${
+                            item.is_active ? "bg-success-soft text-success" : "bg-surface-sunken text-ink-muted"
+                          }`}
+                        >
+                          {item.is_active ? "Aktif" : "Nonaktif"}
+                        </button>
+                      </td>
+                      <td className="whitespace-nowrap px-4 py-2 text-right">
+                        <button
+                          onClick={() => {
+                            setRowError(null);
+                            setEditing(item.id);
+                          }}
+                          className="text-sm font-semibold text-link hover:underline"
+                        >
+                          Edit
+                        </button>
+                        <button
+                          onClick={() => removeRow(item)}
+                          className="ml-3 text-sm font-semibold text-danger hover:underline"
+                        >
+                          Hapus
+                        </button>
+                      </td>
+                    </tr>
+                  ),
+                )}
                 {items.length === 0 && (
                   <tr>
-                    <td colSpan={7} className="px-4 py-6 text-center text-ink-faint">
+                    <td colSpan={8} className="px-4 py-6 text-center text-ink-faint">
                       Belum ada buku di event ini.
                     </td>
                   </tr>
@@ -305,9 +366,88 @@ export default function AdminBooksPage() {
               </tbody>
             </table>
           </div>
+          {rowError && (
+            <p role="alert" className="mt-2 text-sm text-danger">
+              {rowError}
+            </p>
+          )}
         </>
       )}
     </div>
+  );
+}
+
+// Baris katalog dalam mode edit: harga & stok saja. Judul/penulis milik tabel
+// `books` (dipakai lintas batch), jadi tidak diubah dari sini.
+function EditRow({
+  item,
+  onSave,
+  onCancel,
+}: {
+  item: EventItemWithBook;
+  onSave: (item: EventItemWithBook, price: number, stock: number | null) => Promise<void>;
+  onCancel: () => void;
+}) {
+  const [price, setPrice] = useState(String(item.price_idr));
+  const [stock, setStock] = useState(item.stock === null ? "" : String(item.stock));
+  const [saving, setSaving] = useState(false);
+  const priceNum = Number(price);
+  const stockNum = stock.trim() === "" ? null : Number(stock);
+  const valid =
+    Number.isInteger(priceNum) && priceNum >= 0 && (stockNum === null || (Number.isInteger(stockNum) && stockNum >= 0));
+
+  async function submit() {
+    if (!valid) return;
+    setSaving(true);
+    await onSave(item, priceNum, stockNum);
+    setSaving(false);
+  }
+
+  return (
+    <tr className="border-t-1 border-line bg-primary-soft">
+      <td className="px-4 py-2">
+        <CoverCell book={item.books} onChanged={onCancel} />
+      </td>
+      <td className="px-4 py-2 font-medium text-ink">{item.books.title}</td>
+      <td className="px-4 py-2 text-ink-muted">{item.books.author ?? "—"}</td>
+      <td className="px-4 py-2 text-ink-muted">{BOOK_FORMAT_LABEL[item.books.format]}</td>
+      <td className="px-4 py-2 text-right">
+        <input
+          type="number"
+          min={0}
+          step={1}
+          value={price}
+          onChange={(e) => setPrice(e.target.value)}
+          aria-label={`Harga ${item.books.title}`}
+          className="w-28 rounded-md border border-border px-2 py-1 text-right tabular-nums"
+        />
+      </td>
+      <td className="px-4 py-2 text-right">
+        <input
+          type="number"
+          min={0}
+          step={1}
+          value={stock}
+          onChange={(e) => setStock(e.target.value)}
+          placeholder="∞"
+          aria-label={`Stok ${item.books.title}`}
+          className="w-20 rounded-md border border-border px-2 py-1 text-right tabular-nums"
+        />
+      </td>
+      <td className="px-4 py-2 text-xs text-ink-muted">Kosong = tanpa batas</td>
+      <td className="whitespace-nowrap px-4 py-2 text-right">
+        <button
+          onClick={submit}
+          disabled={!valid || saving}
+          className="btn btn-primary press px-3 py-1 text-sm font-semibold disabled:opacity-60"
+        >
+          {saving ? "Menyimpan…" : "Simpan"}
+        </button>
+        <button onClick={onCancel} className="ml-3 text-sm font-semibold text-ink-muted hover:underline">
+          Batal
+        </button>
+      </td>
+    </tr>
   );
 }
 

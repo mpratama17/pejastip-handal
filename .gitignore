@@ -54,8 +54,9 @@ client_secret*.json
 .claude/
 Claude outputs/
 
-# referensi desain pihak ketiga — arsip lokal saja (docs/04 §1)
-docs/design-refs/
+# seluruh docs/ lokal saja: brief, PRD, design system, log uji, foto sampul,
+# skrip uji abuse. Repo ini publik — jangan ada yang bocor ke sini.
+docs/
 
 # sampul buku contoh (karya penerbit) — lokal saja; produksi pakai Supabase Storage
 public/books/
