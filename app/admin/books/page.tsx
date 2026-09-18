@@ -20,6 +20,8 @@ type ImportResult = Database["public"]["Functions"]["import_catalog_csv"]["Retur
 
 const FORMATS: BookFormat[] = ["paperback", "hardcover", "boxset", "other"];
 
+type BookFields = { title: string; author: string | null; isbn: string | null; format: BookFormat };
+
 export default function AdminBooksPage() {
   const [events, setEvents] = useState<EventRow[]>([]);
   const [eventId, setEventId] = useState<string>("");
@@ -36,6 +38,7 @@ export default function AdminBooksPage() {
     price_idr: "",
     stock: "",
   });
+  const [coverFile, setCoverFile] = useState<File | null>(null);
   const [savingManual, setSavingManual] = useState(false);
   const [manualError, setManualError] = useState<string | null>(null);
 
@@ -90,17 +93,39 @@ export default function AdminBooksPage() {
       ],
     });
 
-    setSavingManual(false);
     if (error) {
+      setSavingManual(false);
       setManualError(error.message);
       return;
     }
     const result = rows?.[0];
     if (result?.status === "error") {
+      setSavingManual(false);
       setManualError(result.message ?? "Gagal menyimpan.");
       return;
     }
+
+    // Sampul baru bisa diunggah setelah bukunya punya id (path-nya `{book_id}.ext`),
+    // jadi urutannya: simpan buku dulu, baru unggah. ISBN unik → cari lewat itu
+    // kalau ada; kalau tidak, ambil buku berjudul sama yang paling baru dibuat.
+    if (coverFile) {
+      const isbn = manual.isbn.trim();
+      const q = supabase.from("books").select("id");
+      const { data: found } = isbn
+        ? await q.eq("isbn", isbn).limit(1)
+        : await q.eq("title", manual.title.trim()).order("created_at", { ascending: false }).limit(1);
+      const bookId = found?.[0]?.id;
+      if (!bookId) {
+        setManualError("Buku tersimpan, tapi sampulnya gagal dipasang: buku tidak ketemu. Pakai tombol Unggah di tabel.");
+      } else {
+        const err = await uploadCover(bookId, coverFile);
+        if (err) setManualError(`Buku tersimpan, tapi sampul gagal diunggah: ${err}`);
+      }
+    }
+
+    setSavingManual(false);
     setManual({ isbn: "", title: "", author: "", format: "paperback", price_idr: "", stock: "" });
+    setCoverFile(null);
     loadItems(eventId);
   }
 
@@ -132,13 +157,19 @@ export default function AdminBooksPage() {
   }
 
   // Harga di order lama tidak ikut berubah: order_items.unit_price_idr adalah snapshot.
-  async function saveRow(item: EventItemWithBook, price: number, stock: number | null) {
+  async function saveRow(item: EventItemWithBook, book: BookFields, price: number, stock: number | null) {
     setRowError(null);
-    const { error } = await supabase
-      .from("event_items")
-      .update({ price_idr: price, stock })
-      .eq("id", item.id);
-    if (error) return setRowError(`Gagal simpan ${item.books.title}: ${error.message}`);
+    const bookRes = await supabase.from("books").update(book).eq("id", item.book_id);
+    if (bookRes.error) {
+      // 23505 = books_isbn_unique. ISBN dipakai buku lain.
+      return setRowError(
+        bookRes.error.code === "23505"
+          ? `ISBN ${book.isbn} sudah dipakai buku lain. Pakai ISBN berbeda, atau kosongkan.`
+          : `Gagal simpan data buku: ${bookRes.error.message}`,
+      );
+    }
+    const { error } = await supabase.from("event_items").update({ price_idr: price, stock }).eq("id", item.id);
+    if (error) return setRowError(`Gagal simpan harga/stok: ${error.message}`);
     setEditing(null);
     loadItems(eventId);
   }
@@ -288,6 +319,41 @@ export default function AdminBooksPage() {
                 className="rounded-sm border border-border px-3 py-2 text-sm"
               />
             </div>
+
+            <div className="mt-3 flex flex-wrap items-center gap-3 border-t border-line pt-3">
+              <span className="text-xs font-semibold text-ink">Sampul (opsional)</span>
+              <label className="cursor-pointer text-xs font-semibold text-link hover:underline">
+                {coverFile ? "Ganti file" : "Pilih file"}
+                <input
+                  type="file"
+                  accept="image/jpeg,image/png,image/webp"
+                  disabled={savingManual}
+                  className="sr-only"
+                  onChange={(e) => {
+                    const f = e.target.files?.[0] ?? null;
+                    e.target.value = "";
+                    setCoverFile(f);
+                  }}
+                />
+              </label>
+              {coverFile ? (
+                <>
+                  <span className="max-w-[16rem] truncate text-xs text-ink-muted">{coverFile.name}</span>
+                  <button
+                    type="button"
+                    onClick={() => setCoverFile(null)}
+                    className="text-xs font-semibold text-danger hover:underline"
+                  >
+                    Hapus pilihan
+                  </button>
+                </>
+              ) : (
+                <span className="text-xs text-ink-faint">
+                  Kalau dikosongkan, sampulnya dibuatkan otomatis dan bisa diganti kapan saja lewat tabel.
+                </span>
+              )}
+            </div>
+
             {manualError && <p className="mt-2 text-sm text-danger">{manualError}</p>}
             <button
               type="submit"
@@ -315,7 +381,7 @@ export default function AdminBooksPage() {
               <tbody>
                 {items.map((item) =>
                   editing === item.id ? (
-                    <EditRow key={item.id} item={item} onSave={saveRow} onCancel={() => setEditing(null)} />
+                    <EditRow key={item.id} item={item} colSpan={8} onSave={saveRow} onCancel={() => setEditing(null)} />
                   ) : (
                     <tr key={item.id} className="border-t-1 border-line">
                       <td className="px-4 py-2">
@@ -377,103 +443,169 @@ export default function AdminBooksPage() {
   );
 }
 
-// Baris katalog dalam mode edit: harga & stok saja. Judul/penulis milik tabel
-// `books` (dipakai lintas batch), jadi tidak diubah dari sini.
+// Baris katalog dalam mode edit. Melebar ke seluruh tabel (pola yang sama dipakai
+// form event) supaya enam kolom tidak bikin tabel makin panjang ke samping.
+// Judul/penulis/ISBN/format milik tabel `books` yang dipakai lintas batch —
+// diberitahukan di form, bukan disembunyikan.
 function EditRow({
   item,
+  colSpan,
   onSave,
   onCancel,
 }: {
   item: EventItemWithBook;
-  onSave: (item: EventItemWithBook, price: number, stock: number | null) => Promise<void>;
+  colSpan: number;
+  onSave: (item: EventItemWithBook, book: BookFields, price: number, stock: number | null) => Promise<void>;
   onCancel: () => void;
 }) {
+  const b = item.books;
+  const [title, setTitle] = useState(b.title);
+  const [author, setAuthor] = useState(b.author ?? "");
+  const [isbn, setIsbn] = useState(b.isbn ?? "");
+  const [format, setFormat] = useState<BookFormat>(b.format);
   const [price, setPrice] = useState(String(item.price_idr));
   const [stock, setStock] = useState(item.stock === null ? "" : String(item.stock));
   const [saving, setSaving] = useState(false);
+
   const priceNum = Number(price);
   const stockNum = stock.trim() === "" ? null : Number(stock);
   const valid =
-    Number.isInteger(priceNum) && priceNum >= 0 && (stockNum === null || (Number.isInteger(stockNum) && stockNum >= 0));
+    title.trim() !== "" &&
+    Number.isInteger(priceNum) &&
+    priceNum >= 0 &&
+    (stockNum === null || (Number.isInteger(stockNum) && stockNum >= 0));
 
   async function submit() {
     if (!valid) return;
     setSaving(true);
-    await onSave(item, priceNum, stockNum);
+    await onSave(
+      item,
+      // ISBN kosong harus jadi null, bukan "": index unik-nya partial (where isbn
+      // is not null), jadi dua buku ber-ISBN "" akan bentrok.
+      { title: title.trim(), author: author.trim() || null, isbn: isbn.trim() || null, format },
+      priceNum,
+      stockNum,
+    );
     setSaving(false);
   }
 
   return (
     <tr className="border-t-1 border-line bg-primary-soft">
-      <td className="px-4 py-2">
-        <CoverCell book={item.books} onChanged={onCancel} />
-      </td>
-      <td className="px-4 py-2 font-medium text-ink">{item.books.title}</td>
-      <td className="px-4 py-2 text-ink-muted">{item.books.author ?? "—"}</td>
-      <td className="px-4 py-2 text-ink-muted">{BOOK_FORMAT_LABEL[item.books.format]}</td>
-      <td className="px-4 py-2 text-right">
-        <input
-          type="number"
-          min={0}
-          step={1}
-          value={price}
-          onChange={(e) => setPrice(e.target.value)}
-          aria-label={`Harga ${item.books.title}`}
-          className="w-28 rounded-md border border-border px-2 py-1 text-right tabular-nums"
-        />
-      </td>
-      <td className="px-4 py-2 text-right">
-        <input
-          type="number"
-          min={0}
-          step={1}
-          value={stock}
-          onChange={(e) => setStock(e.target.value)}
-          placeholder="∞"
-          aria-label={`Stok ${item.books.title}`}
-          className="w-20 rounded-md border border-border px-2 py-1 text-right tabular-nums"
-        />
-      </td>
-      <td className="px-4 py-2 text-xs text-ink-muted">Kosong = tanpa batas</td>
-      <td className="whitespace-nowrap px-4 py-2 text-right">
-        <button
-          onClick={submit}
-          disabled={!valid || saving}
-          className="btn btn-primary press px-3 py-1 text-sm font-semibold disabled:opacity-60"
-        >
-          {saving ? "Menyimpan…" : "Simpan"}
-        </button>
-        <button onClick={onCancel} className="ml-3 text-sm font-semibold text-ink-muted hover:underline">
-          Batal
-        </button>
+      <td colSpan={colSpan} className="px-4 py-4">
+        <div className="flex items-start gap-4">
+          <div className="w-28 shrink-0">
+            <CoverCell book={b} onChanged={onCancel} />
+          </div>
+          <div className="min-w-0 flex-1">
+            <div className="grid gap-3 sm:grid-cols-2 lg:grid-cols-3">
+              <Field label="Judul">
+                <input value={title} onChange={(e) => setTitle(e.target.value)} maxLength={300} className={EDIT_INPUT} />
+              </Field>
+              <Field label="Penulis">
+                <input value={author} onChange={(e) => setAuthor(e.target.value)} maxLength={150} className={EDIT_INPUT} />
+              </Field>
+              <Field label="ISBN">
+                <input
+                  value={isbn}
+                  onChange={(e) => setIsbn(e.target.value)}
+                  maxLength={20}
+                  placeholder="kosongkan kalau tidak ada"
+                  className={`${EDIT_INPUT} tabular-nums`}
+                />
+              </Field>
+              <Field label="Format">
+                <select value={format} onChange={(e) => setFormat(e.target.value as BookFormat)} className={EDIT_INPUT}>
+                  {FORMATS.map((f) => (
+                    <option key={f} value={f}>
+                      {BOOK_FORMAT_LABEL[f]}
+                    </option>
+                  ))}
+                </select>
+              </Field>
+              <Field label="Harga (Rp)">
+                <input
+                  type="number"
+                  min={0}
+                  step={1}
+                  value={price}
+                  onChange={(e) => setPrice(e.target.value)}
+                  className={`${EDIT_INPUT} tabular-nums`}
+                />
+              </Field>
+              <Field label="Stok" hint="kosong = tanpa batas">
+                <input
+                  type="number"
+                  min={0}
+                  step={1}
+                  value={stock}
+                  onChange={(e) => setStock(e.target.value)}
+                  placeholder="∞"
+                  className={`${EDIT_INPUT} tabular-nums`}
+                />
+              </Field>
+            </div>
+            <p className="mt-3 text-xs text-ink-muted">
+              Judul, penulis, ISBN, dan format milik daftar buku — ikut berubah di semua batch yang memakai buku ini.
+              Harga dan stok hanya untuk batch ini.
+            </p>
+            <div className="mt-3 flex items-center gap-3">
+              <button
+                onClick={submit}
+                disabled={!valid || saving}
+                className="btn btn-primary press px-4 py-1.5 text-sm font-semibold disabled:opacity-60"
+              >
+                {saving ? "Menyimpan…" : "Simpan"}
+              </button>
+              <button onClick={onCancel} className="text-sm font-semibold text-ink-muted hover:underline">
+                Batal
+              </button>
+            </div>
+          </div>
+        </div>
       </td>
     </tr>
   );
 }
 
+const EDIT_INPUT = "w-full rounded-md border border-border px-2 py-1.5 text-sm";
+
+function Field({ label, hint, children }: { label: string; hint?: string; children: React.ReactNode }) {
+  return (
+    <label className="block text-xs font-semibold text-ink">
+      {label}
+      {hint && <span className="ml-1 font-normal text-ink-faint">({hint})</span>}
+      <div className="mt-1">{children}</div>
+    </label>
+  );
+}
+
 // Unggah sampul ke bucket publik `book-covers` lalu simpan URL-nya di books.
+// Dipakai dua tempat: tombol Ganti di tabel, dan form tambah buku manual.
+// Mengembalikan pesan error, atau null kalau berhasil.
+async function uploadCover(bookId: string, file: File): Promise<string | null> {
+  if (!file.type.startsWith("image/")) return "File harus gambar.";
+  const small = await compressImage(file);
+  const ext = small.type === "image/webp" ? "webp" : small.type === "image/png" ? "png" : "jpg";
+  const path = `${bookId}.${ext}`;
+  const up = await supabase.storage.from("book-covers").upload(path, small, { upsert: true, contentType: small.type });
+  if (up.error) return up.error.message;
+  // Path selalu sama per buku → tambahkan penanda versi supaya cache CDN/browser ikut berganti.
+  const url = `${supabase.storage.from("book-covers").getPublicUrl(path).data.publicUrl}?v=${Date.now()}`;
+  const { error } = await supabase.from("books").update({ cover_url: url }).eq("id", bookId);
+  return error?.message ?? null;
+}
+
 // Buku tanpa sampul tetap memakai sampul generatif (docs/04 §6).
 function CoverCell({ book, onChanged }: { book: BookRow; onChanged: () => void }) {
   const [busy, setBusy] = useState(false);
   const [error, setError] = useState<string | null>(null);
 
   async function upload(file: File) {
-    if (!file.type.startsWith("image/")) return setError("File harus gambar.");
     setBusy(true);
     setError(null);
-    const small = await compressImage(file);
-    const ext = small.type === "image/webp" ? "webp" : small.type === "image/png" ? "png" : "jpg";
-    const path = `${book.id}.${ext}`;
-    const up = await supabase.storage.from("book-covers").upload(path, small, { upsert: true, contentType: small.type });
-    if (up.error) {
-      setBusy(false);
-      return setError(up.error.message);
-    }
-    // Path selalu sama per buku → tambahkan penanda versi supaya cache CDN/browser ikut berganti.
-    const url = `${supabase.storage.from("book-covers").getPublicUrl(path).data.publicUrl}?v=${Date.now()}`;
-    const { error } = await supabase.from("books").update({ cover_url: url }).eq("id", book.id);
+    const err = await uploadCover(book.id, file);
     setBusy(false);
-    if (error) return setError(error.message);
+    if (err) return setError(err);
     onChanged();
   }
 
