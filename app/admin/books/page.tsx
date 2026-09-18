@@ -1,13 +1,14 @@
 "use client";
 
-import { useEffect, useState } from "react";
+import { useEffect, useMemo, useState } from "react";
 import { supabase } from "@/lib/supabase/client";
-import { formatIDR } from "@/lib/format";
+import { formatIDR, formatDateID } from "@/lib/format";
 import { parseSimpleCSV } from "@/lib/csv";
 import { BOOK_FORMAT_LABEL } from "@/lib/labels";
 import { compressImage } from "@/lib/compress-image";
 import { useConfirm } from "@/components/admin/confirm-dialog";
 import { BookCover } from "@/components/public/book-cover";
+import { SortTh, sortRows, useSort } from "@/components/admin/sortable";
 import type { Database } from "@/types/database";
 
 type EventRow = Database["public"]["Tables"]["events"]["Row"];
@@ -20,12 +21,16 @@ type ImportResult = Database["public"]["Functions"]["import_catalog_csv"]["Retur
 
 const FORMATS: BookFormat[] = ["paperback", "hardcover", "boxset", "other"];
 
+type BookSortKey = "title" | "author" | "format" | "price" | "stock" | "created";
+
 type BookFields = { title: string; author: string | null; isbn: string | null; format: BookFormat };
 
 export default function AdminBooksPage() {
   const [events, setEvents] = useState<EventRow[]>([]);
   const [eventId, setEventId] = useState<string>("");
   const [items, setItems] = useState<EventItemWithBook[]>([]);
+  const [search, setSearch] = useState("");
+  const { sort, onSort } = useSort<BookSortKey>({ key: "title", dir: "asc" });
   const [importResults, setImportResults] = useState<ImportResult[]>([]);
   const [importing, setImporting] = useState(false);
   const [importError, setImportError] = useState<string | null>(null);
@@ -38,9 +43,25 @@ export default function AdminBooksPage() {
     price_idr: "",
     stock: "",
   });
+  const shown = useMemo(() => {
+    const q = search.trim().toLowerCase();
+    const found = q
+      ? items.filter((i) => [i.books.title, i.books.author, i.books.isbn].some((v) => v?.toLowerCase().includes(q)))
+      : items;
+    return sortRows(found, sort, (i, key) =>
+      key === "title" ? i.books.title
+      : key === "author" ? i.books.author
+      : key === "format" ? BOOK_FORMAT_LABEL[i.books.format]
+      : key === "price" ? i.price_idr
+      : key === "stock" ? i.stock            // null = stok tak terbatas, jatuh ke bawah
+      : i.books.created_at,
+    );
+  }, [items, search, sort]);
+
   const [coverFile, setCoverFile] = useState<File | null>(null);
   const [savingManual, setSavingManual] = useState(false);
   const [manualError, setManualError] = useState<string | null>(null);
+  const [manualOk, setManualOk] = useState<string | null>(null);
 
   const [editing, setEditing] = useState<string | null>(null);
   const [rowError, setRowError] = useState<string | null>(null);
@@ -76,9 +97,37 @@ export default function AdminBooksPage() {
   async function handleManualAdd(e: React.FormEvent) {
     e.preventDefault();
     if (!eventId) return;
-    setSavingManual(true);
     setManualError(null);
+    setManualOk(null);
 
+    // import_catalog_csv memakai ISBN sebagai kunci: kalau ISBN-nya sudah ada,
+    // buku itu yang di-update — judul, penulis, harga ikut tertimpa di SEMUA
+    // batch yang memakainya. Untuk impor CSV ulang itu memang yang diinginkan,
+    // tapi form ini bunyinya "tambah buku", jadi salah ketik satu digit ISBN
+    // bisa menimpa buku lain tanpa suara. Sebutkan bukunya dulu.
+    const typedIsbn = manual.isbn.trim();
+    if (typedIsbn) {
+      const { data: bentrok } = await supabase
+        .from("books")
+        .select("title, author")
+        .eq("isbn", typedIsbn)
+        .limit(1);
+      const lama = bentrok?.[0];
+      if (lama && lama.title !== manual.title.trim()) {
+        const ok = await confirm({
+          title: "ISBN ini sudah dipakai buku lain",
+          body:
+            `ISBN ${typedIsbn} terdaftar sebagai "${lama.title}"${lama.author ? ` — ${lama.author}` : ""}.\n\n` +
+            `Melanjutkan akan mengubah judulnya jadi "${manual.title.trim()}" di semua batch yang memakai buku itu, ` +
+            `bukan menambah buku baru.\n\nBatalkan kalau ISBN-nya salah ketik.`,
+          confirmLabel: "Ya, ubah buku itu",
+          tone: "danger",
+        });
+        if (!ok) return;
+      }
+    }
+
+    setSavingManual(true);
     const { data: rows, error } = await supabase.rpc("import_catalog_csv", {
       p_event_id: eventId,
       p_rows: [
@@ -124,6 +173,7 @@ export default function AdminBooksPage() {
     }
 
     setSavingManual(false);
+    setManualOk(`"${manual.title.trim()}" masuk ke katalog${coverFile ? " beserta sampulnya" : ""}.`);
     setManual({ isbn: "", title: "", author: "", format: "paperback", price_idr: "", stock: "" });
     setCoverFile(null);
     loadItems(eventId);
@@ -268,7 +318,15 @@ export default function AdminBooksPage() {
             )}
           </div>
 
-          <form onSubmit={handleManualAdd} className="mt-6 rounded-lg border border-border bg-surface p-5">
+          {/* Pesan sukses milik buku yang barusan masuk. Begitu form disentuh
+              lagi dia jadi bohong, jadi dihapus di sentuhan pertama — bukan cuma
+              di submit berikutnya, karena validasi browser bisa menahan submit
+              dan pesan lama tetap terpampang di atas buku yang belum tersimpan. */}
+          <form
+            onSubmit={handleManualAdd}
+            onChange={() => setManualOk(null)}
+            className="mt-6 rounded-lg border border-border bg-surface p-5"
+          >
             <h2 className="text-sm font-semibold text-ink">Tambah buku manual</h2>
             <div className="mt-3 grid gap-3 sm:grid-cols-3">
               <input
@@ -354,7 +412,16 @@ export default function AdminBooksPage() {
               )}
             </div>
 
-            {manualError && <p className="mt-2 text-sm text-danger">{manualError}</p>}
+            {manualError && (
+              <p role="alert" className="mt-2 text-sm text-danger">
+                {manualError}
+              </p>
+            )}
+            {manualOk && (
+              <p role="status" className="mt-2 text-sm font-medium text-success">
+                ✓ {manualOk}
+              </p>
+            )}
             <button
               type="submit"
               disabled={savingManual}
@@ -364,24 +431,33 @@ export default function AdminBooksPage() {
             </button>
           </form>
 
-          <div className="mt-6 overflow-x-auto rounded-lg border border-border">
+          <input
+            type="search"
+            value={search}
+            onChange={(e) => setSearch(e.target.value)}
+            placeholder="Cari judul, penulis, ISBN"
+            className="mt-6 w-72 rounded-sm border border-border px-3 py-2 text-sm"
+          />
+
+          <div className="mt-3 overflow-x-auto rounded-lg border border-border">
             <table className="w-full text-sm">
               <thead className="border-b border-ink bg-surface-sunken text-left">
                 <tr>
                   <th className="px-4 py-2 font-medium">Sampul</th>
-                  <th className="px-4 py-2 font-medium">Judul</th>
-                  <th className="px-4 py-2 font-medium">Penulis</th>
-                  <th className="px-4 py-2 font-medium">Format</th>
-                  <th className="px-4 py-2 text-right font-medium">Harga</th>
-                  <th className="px-4 py-2 text-right font-medium">Stok</th>
+                  <SortTh label="Judul" sortKey="title" sort={sort} onSort={onSort} />
+                  <SortTh label="Penulis" sortKey="author" sort={sort} onSort={onSort} />
+                  <SortTh label="Format" sortKey="format" sort={sort} onSort={onSort} />
+                  <SortTh label="Harga" sortKey="price" sort={sort} onSort={onSort} align="right" />
+                  <SortTh label="Stok" sortKey="stock" sort={sort} onSort={onSort} align="right" />
                   <th className="px-4 py-2 font-medium">Aktif</th>
+                  <SortTh label="Ditambahkan" sortKey="created" sort={sort} onSort={onSort} />
                   <th className="px-4 py-2 text-right font-medium">Aksi</th>
                 </tr>
               </thead>
               <tbody>
-                {items.map((item) =>
+                {shown.map((item) =>
                   editing === item.id ? (
-                    <EditRow key={item.id} item={item} colSpan={8} onSave={saveRow} onCancel={() => setEditing(null)} />
+                    <EditRow key={item.id} item={item} colSpan={9} onSave={saveRow} onCancel={() => setEditing(null)} />
                   ) : (
                     <tr key={item.id} className="border-t-1 border-line">
                       <td className="px-4 py-2">
@@ -401,6 +477,9 @@ export default function AdminBooksPage() {
                         >
                           {item.is_active ? "Aktif" : "Nonaktif"}
                         </button>
+                      </td>
+                      <td className="whitespace-nowrap px-4 py-2 text-ink-muted">
+                        {formatDateID(item.books.created_at)}
                       </td>
                       <td className="whitespace-nowrap px-4 py-2 text-right">
                         <button
@@ -422,10 +501,10 @@ export default function AdminBooksPage() {
                     </tr>
                   ),
                 )}
-                {items.length === 0 && (
+                {shown.length === 0 && (
                   <tr>
-                    <td colSpan={8} className="px-4 py-6 text-center text-ink-faint">
-                      Belum ada buku di event ini.
+                    <td colSpan={9} className="px-4 py-6 text-center text-ink-faint">
+                      {items.length === 0 ? "Belum ada buku di event ini." : `Tidak ada buku yang cocok dengan "${search}".`}
                     </td>
                   </tr>
                 )}

@@ -7,10 +7,12 @@ import { supabase } from "@/lib/supabase/client";
 import { useConfirm } from "@/components/admin/confirm-dialog";
 import { formatIDR, formatDateID } from "@/lib/format";
 import { StatusChip } from "@/components/status-chip";
+import { SortTh, sortRows, useSort } from "@/components/admin/sortable";
 import type { Database } from "@/types/database";
 
 type Customer = Database["public"]["Tables"]["customers"]["Row"];
 type Balance = Database["public"]["Views"]["v_customer_balance"]["Row"];
+type CustSortKey = "name" | "code" | "whatsapp" | "debt";
 
 export default function AdminCustomersPage() {
   return (
@@ -27,6 +29,7 @@ function Customers() {
   const [balances, setBalances] = useState<Record<string, Balance>>({});
   const [search, setSearch] = useState("");
   const [onlyDebt, setOnlyDebt] = useState(false);
+  const { sort, onSort } = useSort<CustSortKey>({ key: "name", dir: "asc" });
 
   const load = useCallback(async () => {
     const [c, b] = await Promise.all([
@@ -43,12 +46,18 @@ function Customers() {
 
   const filtered = useMemo(() => {
     const q = search.trim().toLowerCase();
-    return (customers ?? []).filter((c) => {
+    const found = (customers ?? []).filter((c) => {
       if (onlyDebt && !(balances[c.id]?.total_balance_idr ?? 0)) return false;
       if (!q) return true;
       return [c.full_name, c.code, c.whatsapp, c.instagram].some((v) => v?.toLowerCase().includes(q));
     });
-  }, [customers, balances, search, onlyDebt]);
+    return sortRows(found, sort, (c, key) =>
+      key === "name" ? c.full_name
+      : key === "code" ? c.code
+      : key === "whatsapp" ? c.whatsapp
+      : (balances[c.id]?.total_balance_idr ?? 0),
+    );
+  }, [customers, balances, search, onlyDebt, sort]);
 
   const selected = customers?.find((c) => c.id === selectedId);
 
@@ -76,10 +85,10 @@ function Customers() {
             <table className="w-full text-sm">
               <thead className="border-b border-ink bg-surface-sunken text-left">
                 <tr>
-                  <th className="px-4 py-2 font-medium">Nama</th>
-                  <th className="px-4 py-2 font-medium">Kode</th>
-                  <th className="px-4 py-2 font-medium">WhatsApp</th>
-                  <th className="px-4 py-2 text-right font-medium">Piutang</th>
+                  <SortTh label="Nama" sortKey="name" sort={sort} onSort={onSort} />
+                  <SortTh label="Kode" sortKey="code" sort={sort} onSort={onSort} />
+                  <SortTh label="WhatsApp" sortKey="whatsapp" sort={sort} onSort={onSort} />
+                  <SortTh label="Piutang" sortKey="debt" sort={sort} onSort={onSort} align="right" />
                 </tr>
               </thead>
               <tbody>
