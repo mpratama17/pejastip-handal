@@ -6,6 +6,7 @@ import { supabase } from "@/lib/supabase/client";
 import { useConfirm } from "@/components/admin/confirm-dialog";
 import { StatusChip, SHIPPING_STATUS_MAP } from "@/components/status-chip";
 import { formatIDR, formatDateID } from "@/lib/format";
+import { PAYMENT_METHOD_LABEL } from "@/lib/labels";
 import { waLink } from "@/lib/site-settings";
 import type { Database } from "@/types/database";
 
@@ -25,6 +26,7 @@ type CatalogItem = {
   books: { title: string; author: string | null } | null;
 };
 type PaymentRow = Database["public"]["Tables"]["payments"]["Row"];
+type PaymentMethod = Database["public"]["Enums"]["payment_method"];
 type PaymentState = Database["public"]["Views"]["v_order_payment"]["Row"];
 
 export default function AdminOrderDetailPage() {
@@ -47,6 +49,21 @@ function OrderDetail() {
   const confirm = useConfirm();
   const [error, setError] = useState<string | null>(null);
   const [notesError, setNotesError] = useState<string | null>(null);
+  const [paymentError, setPaymentError] = useState<string | null>(null);
+
+  async function deleteManualPayment(p: PaymentRow) {
+    const ok = await confirm({
+      title: "Hapus pembayaran ini?",
+      body: `${formatIDR(p.amount_idr)} · ${PAYMENT_METHOD_LABEL[p.method] ?? p.method}\n\nStatus bayar order akan dihitung ulang.`,
+      confirmLabel: "Hapus",
+      tone: "danger",
+    });
+    if (!ok) return;
+    setPaymentError(null);
+    const { error } = await supabase.rpc("admin_delete_manual_payment", { p_payment_id: p.id });
+    if (error) return setPaymentError(error.message);
+    load();
+  }
 
   async function load() {
     if (!id) return;
@@ -178,6 +195,7 @@ function OrderDetail() {
                 <th className="px-4 py-2 text-right font-medium">Nominal</th>
                 <th className="px-4 py-2 font-medium">Metode</th>
                 <th className="px-4 py-2 font-medium">Status</th>
+                <th className="px-4 py-2 text-right font-medium">Aksi</th>
               </tr>
             </thead>
             <tbody>
@@ -185,20 +203,43 @@ function OrderDetail() {
                 <tr key={p.id} className="border-t-1 border-line">
                   <td className="px-4 py-2 text-ink-muted">{p.paid_at ?? formatDateID(p.created_at)}</td>
                   <td className="px-4 py-2 text-right tabular-nums">{formatIDR(p.amount_idr)}</td>
-                  <td className="px-4 py-2 text-ink-muted">{p.method}</td>
+                  <td className="px-4 py-2 text-ink-muted">
+                    {PAYMENT_METHOD_LABEL[p.method] ?? p.method}
+                    {p.proof_url === null && <span className="ml-1 text-xs text-ink-faint">(dicatat manual)</span>}
+                  </td>
                   <td className="px-4 py-2 capitalize">{p.status}</td>
+                  <td className="whitespace-nowrap px-4 py-2 text-right">
+                    {/* Bukti unggahan customer tidak boleh dihapus diam-diam —
+                        itu lewat alur verifikasi/tolak di halaman Pembayaran. */}
+                    {p.proof_url === null ? (
+                      <button
+                        onClick={() => deleteManualPayment(p)}
+                        className="text-sm font-semibold text-danger hover:underline"
+                      >
+                        Hapus
+                      </button>
+                    ) : (
+                      <span className="text-xs text-ink-faint">—</span>
+                    )}
+                  </td>
                 </tr>
               ))}
               {payments.length === 0 && (
                 <tr>
-                  <td colSpan={4} className="px-4 py-6 text-center text-ink-faint">
-                    Belum ada bukti pembayaran masuk.
+                  <td colSpan={5} className="px-4 py-6 text-center text-ink-faint">
+                    Belum ada pembayaran tercatat.
                   </td>
                 </tr>
               )}
             </tbody>
           </table>
         </div>
+        {paymentError && (
+          <p role="alert" className="mt-2 text-sm text-danger">
+            {paymentError}
+          </p>
+        )}
+        <RecordPaymentForm orderId={order.id} balance={paymentState?.balance_idr ?? 0} onSaved={load} onError={setPaymentError} />
       </div>
 
       <div className="mt-8 max-w-lg rounded-lg border border-border bg-surface p-5">
@@ -243,6 +284,139 @@ function OrderDetail() {
             {notesError}
           </p>
         )}
+      </div>
+    </div>
+  );
+}
+
+// Status bayar tidak disimpan — dihitung dari pembayaran terverifikasi
+// (v_order_payment). Jadi yang dicatat pembayarannya; chip Belum Bayar /
+// DP Diterima / Lunas ikut berubah sendiri.
+function RecordPaymentForm({
+  orderId,
+  balance,
+  onSaved,
+  onError,
+}: {
+  orderId: string;
+  balance: number;
+  onSaved: () => void;
+  onError: (msg: string | null) => void;
+}) {
+  const [open, setOpen] = useState(false);
+  const [amount, setAmount] = useState("");
+  const [method, setMethod] = useState<PaymentMethod>("bank_transfer");
+  const [paidAt, setPaidAt] = useState(() => new Date().toISOString().slice(0, 10));
+  const [note, setNote] = useState("");
+  const [saving, setSaving] = useState(false);
+
+  const amountNum = Number(amount);
+  const valid = Number.isInteger(amountNum) && amountNum > 0;
+
+  async function save() {
+    if (!valid) return;
+    setSaving(true);
+    onError(null);
+    const { error } = await supabase.rpc("admin_record_payment", {
+      p_order_id: orderId,
+      p_amount_idr: amountNum,
+      p_method: method,
+      p_paid_at: paidAt,
+      p_note: note.trim(),
+    });
+    setSaving(false);
+    if (error) return onError(error.message);
+    setAmount("");
+    setNote("");
+    setOpen(false);
+    onSaved();
+  }
+
+  if (!open) {
+    return (
+      <button onClick={() => setOpen(true)} className="btn btn-primary press mt-3 px-4 py-2 text-sm font-semibold">
+        + Catat pembayaran
+      </button>
+    );
+  }
+
+  return (
+    <div className="mt-3 max-w-2xl rounded-lg border border-border bg-surface p-5">
+      <h3 className="text-sm font-semibold text-ink">Catat pembayaran manual</h3>
+      <p className="mt-1 text-xs text-ink-muted">
+        Untuk transfer yang sudah kamu lihat sendiri di mutasi rekening, tanpa customer mengunggah bukti.
+        {balance > 0 && <> Sisa tagihan sekarang {formatIDR(balance)}.</>}
+      </p>
+      <div className="mt-3 grid gap-3 sm:grid-cols-3">
+        <label className="block text-xs font-semibold text-ink">
+          Nominal (Rp)
+          <input
+            type="number"
+            min={1}
+            step={1}
+            value={amount}
+            onChange={(e) => setAmount(e.target.value)}
+            className="mt-1 w-full rounded-md border border-border px-2 py-1.5 text-sm tabular-nums"
+          />
+        </label>
+        <label className="block text-xs font-semibold text-ink">
+          Metode
+          <select
+            value={method}
+            onChange={(e) => setMethod(e.target.value as PaymentMethod)}
+            className="mt-1 w-full rounded-md border border-border px-2 py-1.5 text-sm"
+          >
+            {(Object.keys(PAYMENT_METHOD_LABEL) as PaymentMethod[]).map((m) => (
+              <option key={m} value={m}>
+                {PAYMENT_METHOD_LABEL[m]}
+              </option>
+            ))}
+          </select>
+        </label>
+        <label className="block text-xs font-semibold text-ink">
+          Tanggal transfer
+          <input
+            type="date"
+            value={paidAt}
+            onChange={(e) => setPaidAt(e.target.value)}
+            className="mt-1 w-full rounded-md border border-border px-2 py-1.5 text-sm"
+          />
+        </label>
+        <label className="block text-xs font-semibold text-ink sm:col-span-3">
+          Catatan <span className="font-normal text-ink-faint">(opsional)</span>
+          <input
+            value={note}
+            onChange={(e) => setNote(e.target.value)}
+            maxLength={200}
+            placeholder="mis. transfer dari rekening istri"
+            className="mt-1 w-full rounded-md border border-border px-2 py-1.5 text-sm"
+          />
+        </label>
+      </div>
+      {balance > 0 && valid && amountNum !== balance && (
+        <p className="mt-2 text-xs text-ink-muted">
+          {amountNum < balance
+            ? `Sisa tagihan jadi ${formatIDR(balance - amountNum)} — status akan "DP Diterima".`
+            : `Lebih ${formatIDR(amountNum - balance)} dari sisa tagihan.`}
+        </p>
+      )}
+      <div className="mt-4 flex items-center gap-3">
+        <button
+          onClick={save}
+          disabled={!valid || saving}
+          className="btn btn-primary press px-4 py-2 text-sm font-semibold disabled:opacity-60"
+        >
+          {saving ? "Menyimpan…" : "Simpan pembayaran"}
+        </button>
+        <button
+          onClick={() => {
+            setOpen(false);
+            onError(null);
+          }}
+          className="text-sm font-semibold text-ink-muted hover:underline"
+        >
+          Batal
+        </button>
       </div>
     </div>
   );

@@ -600,6 +600,10 @@ export type Database = {
           order_id: string
         }[]
       }
+      admin_delete_manual_payment: {
+        Args: { p_payment_id: string }
+        Returns: undefined
+      }
       admin_mark_proofs_purged: {
         Args: { p_payment_ids: string[] }
         Returns: number
@@ -612,6 +616,16 @@ export type Database = {
           proof_path: string
           size_bytes: number
         }[]
+      }
+      admin_record_payment: {
+        Args: {
+          p_amount_idr: number
+          p_method: Database["public"]["Enums"]["payment_method"]
+          p_note: string
+          p_order_id: string
+          p_paid_at: string
+        }
+        Returns: string
       }
       admin_review_payment: {
         Args: {

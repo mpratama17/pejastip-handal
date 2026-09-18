@@ -43,3 +43,10 @@ export const isBeforeOpen = (ev: EventSchedule, now: number) =>
 export function isAcceptingOrders(ev: EventSchedule, now: number): boolean {
   return ev.status === "open" && !isPastClose(ev, now) && !isBeforeOpen(ev, now);
 }
+
+export const PAYMENT_METHOD_LABEL: Record<string, string> = {
+  bank_transfer: "Transfer bank",
+  shopeepay: "ShopeePay",
+  qris: "QRIS",
+  other: "Lainnya",
+};
