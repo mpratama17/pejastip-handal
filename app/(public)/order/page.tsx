@@ -17,7 +17,9 @@ type EventRow = Database["public"]["Tables"]["events"]["Row"];
 type CatalogueRow = Database["public"]["Functions"]["get_catalogue"]["Returns"][number];
 type OrderResult = Database["public"]["Functions"]["create_order"]["Returns"][number];
 
-const STEPS = ["Data diri", "Pilih batch", "Pilih buku", "Pembayaran", "Konfirmasi"];
+// Satu halaman, bukan wizard (docs/02 §Form order: "lima langkah dalam satu
+// halaman"). Nomor 1-5 cuma label bagian, tidak menggerbangi apa pun — semua
+// terlihat sekaligus, dan ringkasan "Slip Order" menempel di kanan.
 const INPUT =
   "mt-1 w-full rounded-md border border-border bg-surface px-3 py-2.5 text-sm text-ink";
 
@@ -31,7 +33,6 @@ export default function OrderPage() {
 
 function OrderForm() {
   const presetEvent = useSearchParams().get("event");
-  const [step, setStep] = useState(1);
   const [idempotencyKey] = useState(() => crypto.randomUUID());
 
   const [events, setEvents] = useState<EventRow[] | null>(null);
@@ -84,11 +85,11 @@ function OrderForm() {
   }, [eventId]);
 
   const selectedEvent = events?.find((e) => e.id === eventId);
-  const filtered = useMemo(() => {
-    const q = search.trim().toLowerCase();
-    if (!catalogue || !q) return catalogue ?? [];
+  const q = search.trim().toLowerCase();
+  const matches = useMemo(() => {
+    if (!catalogue || !q) return [];
     return catalogue.filter((r) => [r.title, r.author, r.isbn].some((v) => v?.toLowerCase().includes(q)));
-  }, [catalogue, search]);
+  }, [catalogue, q]);
 
   const cartLines = (catalogue ?? [])
     .filter((r) => (cart[r.event_item_id] ?? 0) > 0)
@@ -106,25 +107,20 @@ function OrderForm() {
     setEventId(id);
   }
 
-  function validate(): string | null {
-    if (step === 1) {
-      if (!fullName.trim()) return "Nama wajib diisi.";
-      if (whatsapp.replace(/\D/g, "").length < 10) return "Nomor WA belum lengkap. Contoh: 08123456789";
-    }
-    if (step === 2 && !eventId) return "Pilih batch dulu.";
-    if (step === 3 && cartLines.length === 0) return "Pilih minimal satu buku.";
-    if (step === 5 && !agreed) return "Centang persetujuan syarat & ketentuan dulu.";
-    return null;
+  function setQty(itemId: string, qty: number) {
+    // Fungsional: klik +/- dan aksi lain dalam satu tick tidak saling menimpa.
+    setCart((c) => ({ ...c, [itemId]: Math.max(0, qty) }));
   }
 
-  function go(delta: 1 | -1) {
-    if (delta === 1) {
-      const err = validate();
-      if (err) return setError(err);
-    }
-    setError(null);
-    setStep((s) => Math.min(5, Math.max(1, s + delta)));
-    window.scrollTo({ top: 0, behavior: "smooth" });
+  // Semua pemeriksaan dievaluasi saat submit — tidak ada lagi gerbang per langkah.
+  // Server tetap penjaga sebenarnya; ini supaya pesannya ramah, bukan error Postgres.
+  function validate(): string | null {
+    if (!fullName.trim()) return "Nama wajib diisi.";
+    if (whatsapp.replace(/\D/g, "").length < 10) return "Nomor WA belum lengkap. Contoh: 08123456789";
+    if (!eventId) return "Pilih batch dulu.";
+    if (cartLines.length === 0) return "Pilih minimal satu buku.";
+    if (!agreed) return "Centang persetujuan syarat & ketentuan dulu.";
+    return null;
   }
 
   async function submit() {
@@ -157,32 +153,9 @@ function OrderForm() {
   if (result) return <OrderSuccess result={result} />;
 
   return (
-    <div className="mx-auto max-w-2xl px-4 py-10">
+    <div className="mx-auto max-w-5xl px-4 py-10">
       <h1 className="font-display text-3xl font-bold">Form order</h1>
-
-      <div className="mt-5" aria-live="polite">
-        <p className="text-sm text-ink-muted">
-          Langkah {step} dari {STEPS.length} · <span className="font-medium text-ink">{STEPS[step - 1]}</span>
-        </p>
-        <ol className="mt-2 flex gap-2">
-          {STEPS.map((label, i) => {
-            const n = i + 1;
-            const done = n < step;
-            return (
-              <li
-                key={label}
-                aria-current={n === step ? "step" : undefined}
-                title={label}
-                className={`flex h-8 w-8 items-center justify-center rounded-full border border-ink font-display text-sm font-extrabold ${
-                  done ? "bg-type-ready" : n === step ? "bg-primary" : "bg-surface text-ink-faint"
-                }`}
-              >
-                {done ? "✓" : n}
-              </li>
-            );
-          })}
-        </ol>
-      </div>
+      <p className="mt-2 text-sm text-ink-muted">Isi dari atas ke bawah. Ringkasannya ikut berubah sambil kamu isi.</p>
 
       {loadError && (
         <p className="mt-6 rounded-lg border border-danger/30 bg-danger-soft p-4 text-sm text-danger" role="alert">
@@ -190,134 +163,141 @@ function OrderForm() {
         </p>
       )}
 
-      <div className="card mt-6 p-5 sm:p-6">
-        {step === 1 && (
-          <div className="flex flex-col gap-4">
-            <label className="block text-sm font-medium">
-              Nama lengkap
-              <input maxLength={100} value={fullName} onChange={(e) => setFullName(e.target.value)} autoComplete="name" className={INPUT} />
-            </label>
-            <label className="block text-sm font-medium">
-              Nomor WhatsApp
-              <input
-                inputMode="tel"
-                maxLength={25}
-                placeholder="08123456789"
-                value={whatsapp}
-                onChange={(e) => setWhatsapp(e.target.value)}
-                autoComplete="tel"
-                className={INPUT}
-              />
-              <span className="mt-1 block text-xs font-normal text-ink-muted">
-                Dipakai untuk konfirmasi order. Pelanggan lama: pakai nomor yang sama supaya kode pelacakanmu tetap.
-              </span>
-            </label>
-            <label className="block text-sm font-medium">
-              Instagram <span className="font-normal text-ink-faint">(opsional)</span>
-              <input maxLength={50} value={instagram} onChange={(e) => setInstagram(e.target.value)} placeholder="@username" className={INPUT} />
-            </label>
-          </div>
-        )}
-
-        {step === 2 && (
-          <div className="flex flex-col gap-3">
-            {events === null && <p className="text-sm text-ink-muted">Memuat batch…</p>}
-            {events?.length === 0 && !loadError && (
-              <p className="text-sm text-ink-muted">
-                Belum ada batch dengan katalog yang buka.{" "}
-                <Link href="/ongoing" className="font-medium text-link hover:underline">
-                  Lihat batch berjalan
-                </Link>
-              </p>
-            )}
-            {events?.map((ev) => (
-              <button
-                key={ev.id}
-                type="button"
-                onClick={() => chooseEvent(ev.id)}
-                aria-pressed={eventId === ev.id}
-                className={`card press p-4 text-left ${eventId === ev.id ? "bg-primary-soft" : ""}`}
-              >
-                <span className="flex items-center gap-2">
-                  <TypeChip type={ev.type} />
-                  {eventId === ev.id && <span className="text-xs font-bold">✓ dipilih</span>}
-                </span>
-                <p className="mt-1.5 font-bold">{ev.name}</p>
-                <p className="mt-1 text-xs text-ink-muted">
-                  DP {Number(ev.dp_percent)}%
-                  {ev.eta_note ? ` · tiba ${ev.eta_note}` : ""}
-                  {ev.closes_at ? ` · tutup ${formatDateID(ev.closes_at)}` : ""}
-                </p>
-              </button>
-            ))}
-          </div>
-        )}
-
-        {step === 3 && (
-          <div>
-            <input
-              type="search"
-              placeholder="Cari judul, penulis, atau ISBN"
-              value={search}
-              onChange={(e) => setSearch(e.target.value)}
-              className={`${INPUT.replace("mt-1 ", "")} rounded-full`}
-            />
-            {catalogue === null ? (
-              <p className="py-8 text-center text-sm text-ink-muted">Memuat katalog…</p>
-            ) : (
-              <ul className="mt-3 flex max-h-[26rem] flex-col divide-y-1 divide-line overflow-y-auto">
-                {filtered.map((r) => {
-                  const qty = cart[r.event_item_id] ?? 0;
-                  const soldOut = r.stock_left === 0;
-                  return (
-                    <li key={r.event_item_id} className="flex items-center gap-3 py-3">
-                      <div className="w-12 shrink-0">
-                        <BookCover compact title={r.title} coverUrl={r.cover_url} />
-                      </div>
-                      <div className="min-w-0 flex-1">
-                        <p className="text-sm font-bold leading-snug">{r.title}</p>
-                        <p className="text-xs text-ink-muted">
-                          {[r.author, BOOK_FORMAT_LABEL[r.format]].filter(Boolean).join(" · ")}
-                        </p>
-                        <p className="mt-1 flex items-center gap-2 text-sm font-bold tabular-nums text-accent-ink">
-                          {formatIDR(r.price_idr)}
-                          {r.stock_left !== null && (
-                            <span
-                              className={`rounded-full border-[1.5px] border-ink px-2 py-0.5 text-xs font-bold text-ink ${
-                                soldOut ? "bg-danger-soft text-danger" : "bg-type-ready"
-                              }`}
-                            >
-                              {soldOut ? "Habis" : `Sisa ${r.stock_left}`}
-                            </span>
-                          )}
-                        </p>
-                      </div>
-                      <QtyStepper
-                        label={r.title}
-                        qty={qty}
-                        max={r.stock_left ?? undefined}
-                        onChange={(q) => setCart((c) => ({ ...c, [r.event_item_id]: q }))}
-                      />
-                    </li>
-                  );
-                })}
-                {filtered.length === 0 && (
-                  <li className="py-8 text-center text-sm text-ink-muted">Tidak ada buku yang cocok.</li>
-                )}
-              </ul>
-            )}
-            <div className="mt-4 flex items-center justify-between border-t-1 border-line pt-3 text-sm">
-              <span className="text-ink-muted">{itemCount} buku dipilih</span>
-              <span className="font-semibold tabular-nums">{formatIDR(subtotal)}</span>
+      <div className="mt-6 grid items-start gap-6 lg:grid-cols-[1fr_19rem]">
+        <div className="flex flex-col gap-5">
+          <Section n={1} title="Data diri">
+            <p className="text-sm text-ink-muted">
+              Pakai nama dan nomor WhatsApp yang sama dengan yang kamu pakai menghubungi kami.
+            </p>
+            <div className="mt-3 grid gap-4 sm:grid-cols-2">
+              <label className="block text-sm font-medium">
+                Nama lengkap
+                <input maxLength={100} value={fullName} onChange={(e) => setFullName(e.target.value)} autoComplete="name" className={INPUT} />
+              </label>
+              <label className="block text-sm font-medium">
+                Nomor WhatsApp
+                <input
+                  inputMode="tel"
+                  maxLength={25}
+                  placeholder="08123456789"
+                  value={whatsapp}
+                  onChange={(e) => setWhatsapp(e.target.value)}
+                  autoComplete="tel"
+                  className={INPUT}
+                />
+              </label>
+              <label className="block text-sm font-medium sm:col-span-2">
+                Instagram <span className="font-normal text-ink-faint">(opsional)</span>
+                <input maxLength={50} value={instagram} onChange={(e) => setInstagram(e.target.value)} placeholder="@username" className={INPUT} />
+              </label>
             </div>
-          </div>
-        )}
+            <p className="mt-2 text-xs text-ink-muted">
+              Pelanggan lama: pakai nomor yang sama supaya kode pelacakanmu tetap.
+            </p>
+          </Section>
 
-        {step === 4 && (
-          <div className="flex flex-col gap-5">
+          <Section n={2} title="Pilih batch">
+            <p className="text-sm text-ink-muted">Satu order untuk satu batch. Ganti batch akan mengosongkan pilihan bukumu.</p>
+            <div className="mt-3 grid gap-3 sm:grid-cols-2">
+              {events === null && <p className="text-sm text-ink-muted">Memuat batch…</p>}
+              {events?.length === 0 && !loadError && (
+                <p className="text-sm text-ink-muted sm:col-span-2">
+                  Belum ada batch dengan katalog yang buka.{" "}
+                  <Link href="/ongoing" className="font-medium text-link hover:underline">
+                    Lihat batch berjalan
+                  </Link>
+                </p>
+              )}
+              {events?.map((ev) => (
+                <button
+                  key={ev.id}
+                  type="button"
+                  onClick={() => chooseEvent(ev.id)}
+                  aria-pressed={eventId === ev.id}
+                  className={`card press p-4 text-left ${eventId === ev.id ? "bg-primary-soft" : ""}`}
+                >
+                  <span className="flex items-center gap-2">
+                    <TypeChip type={ev.type} />
+                    {eventId === ev.id && <span className="text-xs font-bold">✓ dipilih</span>}
+                  </span>
+                  <p className="mt-1.5 font-bold">{ev.name}</p>
+                  <p className="mt-1 text-xs text-ink-muted">
+                    DP {Number(ev.dp_percent)}%
+                    {ev.eta_note ? ` · tiba ${ev.eta_note}` : ""}
+                    {ev.closes_at ? ` · tutup ${formatDateID(ev.closes_at)}` : ""}
+                  </p>
+                </button>
+              ))}
+            </div>
+          </Section>
+
+          <Section n={3} title="Pilih buku">
+            {!eventId ? (
+              <p className="text-sm text-ink-muted">Pilih batch dulu di atas.</p>
+            ) : (
+              <>
+                <label className="block text-sm font-medium">
+                  Cari judul, penulis, atau ISBN
+                  <input
+                    type="search"
+                    placeholder="Ketik untuk mencari buku…"
+                    value={search}
+                    onChange={(e) => setSearch(e.target.value)}
+                    className={`${INPUT} rounded-full`}
+                  />
+                </label>
+
+                {catalogue === null ? (
+                  <p className="py-6 text-sm text-ink-muted">Memuat katalog…</p>
+                ) : q === "" ? (
+                  <p className="mt-3 text-xs text-ink-muted">
+                    Belum tahu isinya?{" "}
+                    <Link href={`/catalogue?event=${eventId}`} target="_blank" className="font-medium text-link hover:underline">
+                      Lihat katalog batch ini
+                    </Link>{" "}
+                    ({catalogue.length} buku).
+                  </p>
+                ) : matches.length === 0 ? (
+                  <p className="mt-3 text-sm text-ink-muted">Tidak ada buku yang cocok dengan &ldquo;{search}&rdquo;.</p>
+                ) : (
+                  <ul className="mt-3 flex max-h-80 flex-col divide-y-1 divide-line overflow-y-auto">
+                    {matches.map((r) => (
+                      <BookLine
+                        key={r.event_item_id}
+                        row={r}
+                        qty={cart[r.event_item_id] ?? 0}
+                        onQty={(v) => setQty(r.event_item_id, v)}
+                      />
+                    ))}
+                  </ul>
+                )}
+
+                <div className="mt-5 border-t-1 border-line pt-4">
+                  <p className="text-xs font-bold tracking-wide text-ink-muted">BUKU DIPILIH ({itemCount})</p>
+                  {cartLines.length === 0 ? (
+                    <p className="mt-2 text-sm text-ink-muted">Belum ada buku dipilih.</p>
+                  ) : (
+                    <ul className="mt-2 flex flex-col divide-y-1 divide-line">
+                      {cartLines.map((l) => (
+                        <BookLine
+                          key={l.row.event_item_id}
+                          row={l.row}
+                          qty={l.qty}
+                          onQty={(v) => setQty(l.row.event_item_id, v)}
+                          removable
+                        />
+                      ))}
+                    </ul>
+                  )}
+                </div>
+              </>
+            )}
+          </Section>
+
+          <Section n={4} title="Pembayaran">
             <fieldset>
               <legend className="text-sm font-medium">Mau bayar berapa sekarang?</legend>
-              <div className="mt-2 grid grid-cols-2 gap-3">
+              <div className="mt-2 grid gap-3 sm:grid-cols-2">
                 {(["dp", "full"] as const).map((t) => (
                   <button
                     key={t}
@@ -334,53 +314,20 @@ function OrderForm() {
                 ))}
               </div>
             </fieldset>
-            <p className="rounded-md border border-ink bg-sky-soft p-3 text-sm">
+            <p className="mt-4 rounded-md border border-ink bg-sky-soft p-3 text-sm">
               {paymentType === "dp"
                 ? "Sisa tagihan dilunasi saat buku tiba di Indonesia — kami kabari lewat WhatsApp."
                 : "Tidak ada tagihan lagi setelah pembayaran ini terverifikasi (di luar ongkir)."}
             </p>
-            <label className="block text-sm font-medium">
+            <label className="mt-4 block text-sm font-medium">
               Catatan untuk admin <span className="font-normal text-ink-faint">(opsional)</span>
               <textarea maxLength={1000} value={customerNotes} onChange={(e) => setCustomerNotes(e.target.value)} rows={2} className={INPUT} />
             </label>
-          </div>
-        )}
+          </Section>
 
-        {step === 5 && (
-          <div className="flex flex-col gap-4">
-            <dl className="grid grid-cols-[auto_1fr] gap-x-4 gap-y-1 text-sm">
-              <dt className="text-ink-muted">Nama</dt>
-              <dd>{fullName}</dd>
-              <dt className="text-ink-muted">WhatsApp</dt>
-              <dd className="tabular-nums">{whatsapp}</dd>
-              <dt className="text-ink-muted">Batch</dt>
-              <dd>{selectedEvent?.name}</dd>
-            </dl>
-            <div className="rounded-md border border-ink bg-surface-sunken p-4 text-sm">
-              {cartLines.map((l) => (
-                <div key={l.row.event_item_id} className="flex justify-between gap-3 py-0.5">
-                  <span>
-                    {l.row.title} <span className="text-ink-muted">× {l.qty}</span>
-                  </span>
-                  <span className="tabular-nums">{formatIDR(l.row.price_idr * l.qty)}</span>
-                </div>
-              ))}
-              <div className="mt-2 flex justify-between border-t-1 border-line pt-2 font-bold">
-                <span>Total</span>
-                <span className="tabular-nums">{formatIDR(subtotal)}</span>
-              </div>
-              <div className="mt-1 flex justify-between font-bold text-accent-ink">
-                <span>Bayar sekarang ({paymentType === "dp" ? `DP ${dpPercent}%` : "lunas"})</span>
-                <span className="tabular-nums">{formatIDR(nominalDue)}</span>
-              </div>
-            </div>
-            <label className="flex items-start gap-2.5 text-sm">
-              <input
-                type="checkbox"
-                checked={agreed}
-                onChange={(e) => setAgreed(e.target.checked)}
-                className="mt-0.5 h-4 w-4"
-              />
+          <Section n={5} title="Konfirmasi">
+            <label className="flex items-start gap-2.5 rounded-md border border-ink bg-surface-sunken p-3 text-sm">
+              <input type="checkbox" checked={agreed} onChange={(e) => setAgreed(e.target.checked)} className="mt-0.5 h-4 w-4" />
               <span>
                 Saya sudah membaca{" "}
                 <Link href="/terms" target="_blank" className="font-medium text-link hover:underline">
@@ -389,42 +336,122 @@ function OrderForm() {
                 dan setuju dengan harga di atas.
               </span>
             </label>
+          </Section>
+        </div>
+
+        <aside className="card bg-primary-soft p-5 lg:sticky lg:top-6">
+          <p className="text-xs font-bold tracking-wide text-ink-muted">RINGKASAN</p>
+          <h2 className="font-display text-xl font-bold">Slip Order</h2>
+          <dl className="mt-4 flex flex-col gap-1.5 text-sm">
+            <div className="flex justify-between gap-3">
+              <dt className="text-ink-muted">Batch</dt>
+              <dd className="text-right font-semibold">{selectedEvent?.name ?? "—"}</dd>
+            </div>
+            <div className="flex justify-between gap-3">
+              <dt className="text-ink-muted">Jumlah buku</dt>
+              <dd className="font-semibold tabular-nums">{itemCount}</dd>
+            </div>
+            <div className="flex justify-between gap-3">
+              <dt className="text-ink-muted">Total</dt>
+              <dd className="font-semibold tabular-nums">{formatIDR(subtotal)}</dd>
+            </div>
+          </dl>
+          <div className="mt-3 flex justify-between gap-3 border-t-1 border-ink pt-3 font-bold text-accent-ink">
+            <span>{paymentType === "dp" ? `Bayar sekarang (DP ${dpPercent}%)` : "Bayar sekarang (lunas)"}</span>
+            <span className="tabular-nums">{formatIDR(nominalDue)}</span>
           </div>
-        )}
 
-        {error && (
-          <p className="mt-4 text-sm text-danger" role="alert">
-            {error}
-          </p>
-        )}
-
-        <div className="mt-6 flex gap-3">
-          {step > 1 && (
-            <button type="button" onClick={() => go(-1)} className="btn btn-secondary press px-5 py-3 text-sm">
-              Kembali
-            </button>
+          {error && (
+            <p className="mt-4 text-sm font-medium text-danger" role="alert">
+              {error}
+            </p>
           )}
-          {step < 5 ? (
-            <button
-              type="button"
-              onClick={() => go(1)}
-              className="btn btn-primary press flex-1 px-4 py-3 text-sm"
+
+          <button
+            type="button"
+            onClick={submit}
+            disabled={submitting}
+            className="btn btn-primary press mt-4 w-full px-4 py-3 text-sm disabled:opacity-60"
+          >
+            {submitting ? "Mengirim…" : "Kirim Order"}
+          </button>
+          <p className="mt-2 text-xs text-ink-muted">
+            Kode pelacakan dan nomor rekening tampil langsung setelah ini.
+          </p>
+        </aside>
+      </div>
+    </div>
+  );
+}
+
+function Section({ n, title, children }: { n: number; title: string; children: React.ReactNode }) {
+  return (
+    <section className="card p-5 sm:p-6">
+      <h2 className="flex items-center gap-2.5 font-display text-lg font-bold">
+        <span className="flex h-7 w-7 shrink-0 items-center justify-center rounded-full border border-ink bg-primary text-sm font-bold tabular-nums">
+          {n}
+        </span>
+        {title}
+      </h2>
+      <div className="mt-3">{children}</div>
+    </section>
+  );
+}
+
+function BookLine({
+  row,
+  qty,
+  onQty,
+  removable = false,
+}: {
+  row: CatalogueRow;
+  qty: number;
+  onQty: (q: number) => void;
+  removable?: boolean;
+}) {
+  const soldOut = row.stock_left === 0;
+  return (
+    <li className="flex items-center gap-3 py-3">
+      <div className="w-12 shrink-0">
+        <BookCover compact title={row.title} coverUrl={row.cover_url} />
+      </div>
+      <div className="min-w-0 flex-1">
+        <p className="text-sm font-bold leading-snug">{row.title}</p>
+        <p className="text-xs text-ink-muted">{[row.author, BOOK_FORMAT_LABEL[row.format]].filter(Boolean).join(" · ")}</p>
+        <p className="mt-1 flex flex-wrap items-center gap-2 text-sm font-bold tabular-nums text-accent-ink">
+          {formatIDR(row.price_idr)}
+          {qty > 0 && <span className="text-ink-muted">× {qty} = {formatIDR(row.price_idr * qty)}</span>}
+          {row.stock_left !== null && (
+            <span
+              className={`rounded-full border-[1.5px] border-ink px-2 py-0.5 text-xs font-bold text-ink ${
+                soldOut ? "bg-danger-soft text-danger" : "bg-type-ready"
+              }`}
             >
-              Lanjut
-            </button>
-          ) : (
-            <button
-              type="button"
-              onClick={submit}
-              disabled={submitting}
-              className="btn btn-primary press flex-1 px-4 py-3 text-sm"
-            >
-              {submitting ? "Mengirim…" : "Kirim Order"}
+              {soldOut ? "Habis" : `Sisa ${row.stock_left}`}
+            </span>
+          )}
+        </p>
+      </div>
+      {qty === 0 ? (
+        <button
+          type="button"
+          onClick={() => onQty(1)}
+          disabled={soldOut}
+          className="btn btn-secondary press shrink-0 px-3 py-1.5 text-sm disabled:opacity-40"
+        >
+          Tambah
+        </button>
+      ) : (
+        <div className="flex shrink-0 flex-col items-end gap-1">
+          <QtyStepper label={row.title} qty={qty} max={row.stock_left ?? undefined} onChange={onQty} />
+          {removable && (
+            <button type="button" onClick={() => onQty(0)} className="text-xs font-semibold text-danger hover:underline">
+              Hapus
             </button>
           )}
         </div>
-      </div>
-    </div>
+      )}
+    </li>
   );
 }
 
