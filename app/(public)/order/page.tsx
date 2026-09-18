@@ -195,12 +195,13 @@ function OrderForm() {
           <div className="flex flex-col gap-4">
             <label className="block text-sm font-medium">
               Nama lengkap
-              <input value={fullName} onChange={(e) => setFullName(e.target.value)} autoComplete="name" className={INPUT} />
+              <input maxLength={100} value={fullName} onChange={(e) => setFullName(e.target.value)} autoComplete="name" className={INPUT} />
             </label>
             <label className="block text-sm font-medium">
               Nomor WhatsApp
               <input
                 inputMode="tel"
+                maxLength={25}
                 placeholder="08123456789"
                 value={whatsapp}
                 onChange={(e) => setWhatsapp(e.target.value)}
@@ -213,7 +214,7 @@ function OrderForm() {
             </label>
             <label className="block text-sm font-medium">
               Instagram <span className="font-normal text-ink-faint">(opsional)</span>
-              <input value={instagram} onChange={(e) => setInstagram(e.target.value)} placeholder="@username" className={INPUT} />
+              <input maxLength={50} value={instagram} onChange={(e) => setInstagram(e.target.value)} placeholder="@username" className={INPUT} />
             </label>
           </div>
         )}
@@ -340,7 +341,7 @@ function OrderForm() {
             </p>
             <label className="block text-sm font-medium">
               Catatan untuk admin <span className="font-normal text-ink-faint">(opsional)</span>
-              <textarea value={customerNotes} onChange={(e) => setCustomerNotes(e.target.value)} rows={2} className={INPUT} />
+              <textarea maxLength={1000} value={customerNotes} onChange={(e) => setCustomerNotes(e.target.value)} rows={2} className={INPUT} />
             </label>
           </div>
         )}

@@ -79,13 +79,14 @@ export default function RequestPage() {
         <div className="grid gap-4 sm:grid-cols-2">
           <label className="block text-sm font-medium">
             Nama
-            <input required value={form.name} onChange={set("name")} autoComplete="name" className={INPUT} />
+            <input required maxLength={100} value={form.name} onChange={set("name")} autoComplete="name" className={INPUT} />
           </label>
           <label className="block text-sm font-medium">
             Nomor WhatsApp
             <input
               required
               inputMode="tel"
+              maxLength={25}
               placeholder="08123456789"
               value={form.whatsapp}
               onChange={set("whatsapp")}
@@ -95,11 +96,11 @@ export default function RequestPage() {
           </label>
           <label className="block text-sm font-medium sm:col-span-2">
             Judul buku
-            <input required value={form.title} onChange={set("title")} className={INPUT} />
+            <input required maxLength={300} value={form.title} onChange={set("title")} className={INPUT} />
           </label>
           <label className="block text-sm font-medium">
             ISBN <span className="font-normal text-ink-faint">(opsional)</span>
-            <input inputMode="numeric" placeholder="978…" value={form.isbn} onChange={set("isbn")} className={INPUT} />
+            <input inputMode="numeric" maxLength={20} placeholder="978…" value={form.isbn} onChange={set("isbn")} className={INPUT} />
           </label>
           <label className="block text-sm font-medium">
             Format
@@ -113,6 +114,7 @@ export default function RequestPage() {
             Catatan <span className="font-normal text-ink-faint">(opsional)</span>
             <textarea
               rows={2}
+              maxLength={1000}
               placeholder="mis. edisi tertentu, sampul tertentu"
               value={form.notes}
               onChange={set("notes")}

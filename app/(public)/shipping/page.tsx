@@ -234,11 +234,11 @@ function ShippingForm() {
               <div className="mt-6 grid gap-4 sm:grid-cols-2">
                 <label className="block text-sm font-medium">
                   Nama penerima
-                  <input required value={recipient.name} onChange={(e) => setRecipient({ ...recipient, name: e.target.value })} autoComplete="name" className={INPUT} />
+                  <input required maxLength={100} value={recipient.name} onChange={(e) => setRecipient({ ...recipient, name: e.target.value })} autoComplete="name" className={INPUT} />
                 </label>
                 <label className="block text-sm font-medium">
                   No. HP penerima <span className="font-normal text-ink-faint">(kosong = no. WA di atas)</span>
-                  <input inputMode="tel" value={recipient.phone} onChange={(e) => setRecipient({ ...recipient, phone: e.target.value })} className={INPUT} />
+                  <input inputMode="tel" maxLength={25} value={recipient.phone} onChange={(e) => setRecipient({ ...recipient, phone: e.target.value })} className={INPUT} />
                 </label>
                 <label className="block text-sm font-medium sm:col-span-2">
                   Kurir
@@ -253,11 +253,11 @@ function ShippingForm() {
                 </label>
                 <label className="block text-sm font-medium sm:col-span-2">
                   Nama jalan
-                  <input required value={address.street} onChange={(e) => setAddress({ ...address, street: e.target.value })} autoComplete="address-line1" className={INPUT} />
+                  <input required maxLength={500} value={address.street} onChange={(e) => setAddress({ ...address, street: e.target.value })} autoComplete="address-line1" className={INPUT} />
                 </label>
                 <label className="block text-sm font-medium sm:col-span-2">
                   No. rumah, RT/RW, patokan <span className="font-normal text-ink-faint">(opsional)</span>
-                  <input value={address.detail} onChange={(e) => setAddress({ ...address, detail: e.target.value })} autoComplete="address-line2" className={INPUT} />
+                  <input maxLength={300} value={address.detail} onChange={(e) => setAddress({ ...address, detail: e.target.value })} autoComplete="address-line2" className={INPUT} />
                 </label>
                 <label className="block text-sm font-medium">
                   Provinsi
@@ -272,7 +272,7 @@ function ShippingForm() {
                 </label>
                 <label className="block text-sm font-medium">
                   Kota / Kabupaten
-                  <input required value={address.city} onChange={(e) => setAddress({ ...address, city: e.target.value })} autoComplete="address-level2" className={INPUT} />
+                  <input required maxLength={100} value={address.city} onChange={(e) => setAddress({ ...address, city: e.target.value })} autoComplete="address-level2" className={INPUT} />
                 </label>
                 <label className="block text-sm font-medium">
                   Kode pos
