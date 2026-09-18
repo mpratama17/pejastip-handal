@@ -1,0 +1,6 @@
+# Sisi customer boleh diindeks. /admin tidak — bukan sebagai pengaman
+# (penjaganya login Supabase + RLS), tapi supaya halaman login admin tidak
+# nongol di hasil pencarian nama toko.
+User-agent: *
+Disallow: /admin
+
