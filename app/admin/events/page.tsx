@@ -94,6 +94,39 @@ export default function AdminEventsPage() {
     loadEvents();
   }
 
+  // Hapus event hanya lolos kalau belum ada order sama sekali: orders.event_id
+  // menahannya di DB (23503). Katalognya ikut terhapus lewat cascade event_items,
+  // jadi jumlah bukunya disebut dulu di dialog.
+  async function removeEvent(ev: EventRow) {
+    const { count } = await supabase
+      .from("event_items")
+      .select("id", { count: "exact", head: true })
+      .eq("event_id", ev.id);
+    const ok = await confirm({
+      title: "Hapus event ini?",
+      body:
+        `${ev.name}\n\n` +
+        (count
+          ? `${count} buku di katalog event ini ikut terhapus. Bukunya sendiri tetap ada di daftar buku.`
+          : "Event ini belum punya katalog.") +
+        "\n\nTidak bisa dibatalkan.",
+      confirmLabel: "Hapus",
+      tone: "danger",
+    });
+    if (!ok) return;
+    setError(null);
+    const { error } = await supabase.from("events").delete().eq("id", ev.id);
+    if (error) {
+      setError(
+        error.code === "23503"
+          ? `"${ev.name}" sudah punya order pelanggan, jadi tidak bisa dihapus. Ubah statusnya jadi Selesai atau Batal saja.`
+          : `Gagal hapus: ${error.message}`,
+      );
+      return;
+    }
+    loadEvents();
+  }
+
   const blankForm: FormState = {
     name: "",
     type: "publisher_po_us",
@@ -203,6 +236,9 @@ export default function AdminEventsPage() {
                     </Link>
                     <button onClick={() => setEditing(ev.id)} className="text-sm font-semibold text-link hover:underline">
                       Edit
+                    </button>
+                    <button onClick={() => removeEvent(ev)} className="ml-3 text-sm font-semibold text-danger hover:underline">
+                      Hapus
                     </button>
                   </td>
                 </tr>
