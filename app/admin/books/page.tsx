@@ -240,13 +240,23 @@ export default function AdminBooksPage() {
     if (!ok) return;
     setRowError(null);
     const { error } = await supabase.from("event_items").delete().eq("id", item.id);
-    // 23503 = masih dipakai order_items. Itu memang harus ditolak.
+    // 23503 = masih dipakai order_items. Itu memang harus ditolak. Alasannya
+    // dikabarkan lewat dialog, bukan teks di bawah tabel: tabelnya discroll ke
+    // samping dan bisa panjang, jadi pesan di bawah sana tidak terlihat sama
+    // sekali — yang terasa cuma "tombolnya tidak berfungsi".
     if (error) {
-      setRowError(
-        error.code === "23503"
-          ? `"${item.books.title}" sudah masuk order pelanggan, jadi tidak bisa dihapus. Set Nonaktif saja supaya hilang dari katalog.`
-          : `Gagal hapus: ${error.message}`,
-      );
+      await confirm({
+        title: error.code === "23503" ? "Buku ini sudah ada yang order" : "Gagal menghapus",
+        body:
+          error.code === "23503"
+            ? `"${item.books.title}" sudah masuk order pelanggan, jadi tidak bisa dihapus dari batch ini. ` +
+              `Menghapusnya akan merusak riwayat order yang sudah ada.\n\n` +
+              `Kalau tujuannya supaya buku ini tidak bisa dipesan lagi, set Nonaktif. ` +
+              `Buku hilang dari katalog customer, tapi order lama tetap utuh.`
+            : error.message,
+        confirmLabel: "Mengerti",
+        alert: true,
+      });
       return;
     }
     loadItems(eventId);

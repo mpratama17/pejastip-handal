@@ -158,7 +158,7 @@ function PaymentCard({
         )}
       </div>
 
-      <div className="flex min-w-0 flex-col">
+      <div className="@container flex min-w-0 flex-col">
         <div className="flex flex-wrap items-start justify-between gap-2">
           <div>
             <Link href={`/admin/orders/detail?id=${order?.id}`} className="font-display text-lg font-bold text-link hover:underline">
@@ -175,7 +175,12 @@ function PaymentCard({
           )}
         </div>
 
-        <dl className="mt-3 grid grid-cols-2 gap-3 text-sm sm:grid-cols-4">
+        {/* @container, bukan sm:. Kartu yang masih pending menaruh thumbnail
+            bukti selebar 180px di kirinya, jadi kolom teks ini sempit walau
+            layarnya lebar — breakpoint berbasis viewport salah menilai dan
+            memaksa 4 kolom ke ruang yang tidak muat, lalu chip status terdorong
+            keluar kartu. Di sini yang diukur lebar kartunya sendiri. */}
+        <dl className="mt-3 grid grid-cols-2 gap-3 text-sm @lg:grid-cols-4">
           <div>
             <dt className="text-xs text-ink-muted">Diklaim</dt>
             <dd className="font-semibold tabular-nums">{formatIDR(payment.amount_idr)}</dd>
@@ -188,9 +193,13 @@ function PaymentCard({
             <dt className="text-xs text-ink-muted">Total order</dt>
             <dd className="tabular-nums">{formatIDR(order?.total_idr)}</dd>
           </div>
-          <div>
+          {/* min-w-0: sel grid defaultnya tidak boleh menyusut di bawah lebar
+              isinya, dan chip di dalam sini sengaja whitespace-nowrap + shrink-0.
+              Tanpa ini kolomnya melebar dan mendorong chip keluar kartu.
+              flex-wrap: kalau tetap sempit, chip turun baris, bukan meluber. */}
+          <div className="min-w-0">
             <dt className="text-xs text-ink-muted">Sisa (terverifikasi)</dt>
-            <dd className="flex items-center gap-1.5 tabular-nums">
+            <dd className="flex flex-wrap items-center gap-x-1.5 gap-y-1 tabular-nums">
               {formatIDR(balance?.balance_idr)}
               {balance?.payment_state && <StatusChip kind="payment" status={balance.payment_state} />}
             </dd>

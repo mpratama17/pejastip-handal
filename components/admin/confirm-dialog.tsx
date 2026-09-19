@@ -7,6 +7,10 @@ type ConfirmOptions = {
   body?: string;
   confirmLabel: string;
   tone?: "danger" | "primary";
+  // Kabar, bukan pertanyaan: sembunyikan tombol Batal karena tidak ada yang
+  // bisa dibatalkan — dipakai saat DB menolak sesuatu dan admin cuma perlu
+  // tahu alasannya.
+  alert?: boolean;
 };
 
 type ConfirmFn = (options: ConfirmOptions) => Promise<boolean>;
@@ -65,9 +69,11 @@ export function ConfirmProvider({ children }: { children: React.ReactNode }) {
             </h2>
             {options.body && <p className="mt-2 whitespace-pre-line text-sm text-ink-muted">{options.body}</p>}
             <div className="mt-5 flex justify-end gap-2">
-              <button type="button" onClick={() => close(false)} className="btn btn-secondary press px-4 py-2 text-sm">
-                Batal
-              </button>
+              {!options.alert && (
+                <button type="button" onClick={() => close(false)} className="btn btn-secondary press px-4 py-2 text-sm">
+                  Batal
+                </button>
+              )}
               <button
                 type="button"
                 onClick={() => close(true)}
