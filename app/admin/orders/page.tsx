@@ -29,6 +29,7 @@ export default function AdminOrdersPage() {
   const [events, setEvents] = useState<EventRow[]>([]);
   const [eventFilter, setEventFilter] = useState("");
   const [paymentFilter, setPaymentFilter] = useState("");
+  const [statusFilter, setStatusFilter] = useState("");
   const [search, setSearch] = useState("");
   const [loading, setLoading] = useState(true);
   const [now] = useState(Date.now);
@@ -67,8 +68,16 @@ export default function AdminOrdersPage() {
 
   const jumlahMangkrak = orders.filter(isMangkrak).length;
 
+  const jumlahBatal = orders.filter((o) => o.status === "cancelled").length;
+
   const filtered = useMemo(() => {
     return orders.filter((o) => {
+      // Order batal disembunyikan dari daftar sehari-hari, TIDAK dihapus: masih
+      // dibutuhkan kalau customer protes belakangan. Filter "Batal" yang
+      // memunculkannya kembali.
+      if (statusFilter === "cancelled") {
+        if (o.status !== "cancelled") return false;
+      } else if (o.status === "cancelled") return false;
       if (eventFilter && o.event_id !== eventFilter) return false;
       if (paymentFilter === "mangkrak") {
         if (!isMangkrak(o)) return false;
@@ -80,7 +89,7 @@ export default function AdminOrdersPage() {
       }
       return true;
     });
-  }, [orders, eventFilter, paymentFilter, search, paymentStates, isMangkrak]);
+  }, [orders, eventFilter, paymentFilter, statusFilter, search, paymentStates, isMangkrak]);
 
   return (
     <div>
@@ -121,6 +130,14 @@ export default function AdminOrdersPage() {
           <option value="fully_paid">Lunas</option>
           <option value="overpaid">Lebih Bayar</option>
           {jumlahMangkrak > 0 && <option value="mangkrak">Mangkrak ({jumlahMangkrak})</option>}
+        </select>
+        <select
+          value={statusFilter}
+          onChange={(e) => setStatusFilter(e.target.value)}
+          className="rounded-sm border border-border px-3 py-2 text-sm"
+        >
+          <option value="">Order aktif</option>
+          <option value="cancelled">Batal{jumlahBatal > 0 ? ` (${jumlahBatal})` : ""}</option>
         </select>
       </div>
 
