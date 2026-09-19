@@ -211,6 +211,27 @@ function Tracker() {
                 ))}
               </ul>
 
+              {/* Urutan enam status itu tidak terbaca dari chip satuan. Ditaruh
+                  collapsed supaya yang sudah paham tidak terganggu, tapi yang
+                  bingung "kenapa masih Belum Berangkat" punya tempat bertanya. */}
+              {!cancelled && (
+                <details className="mt-3 text-sm">
+                  <summary className="cursor-pointer text-ink-muted">Arti status pengiriman</summary>
+                  <div className="mt-2 rounded-md border-[1.5px] border-ink bg-surface-sunken p-3 text-xs">
+                    <p className="font-semibold text-ink">Dari luar negeri ke admin</p>
+                    <p className="mt-0.5 text-ink-muted">
+                      Belum Berangkat, lalu Menuju Indonesia, lalu Tiba di Admin. Belum Berangkat berarti bukumu
+                      belum jalan dari penjual di sana.
+                    </p>
+                    <p className="mt-2 font-semibold text-ink">Dari admin ke kamu</p>
+                    <p className="mt-0.5 text-ink-muted">
+                      Menunggu Kurir, lalu Dikirim ke Kamu, lalu Diterima. Nomor resi muncul begitu paketmu
+                      diserahkan ke kurir.
+                    </p>
+                  </div>
+                </details>
+              )}
+
               {payments.length > 0 && (
                 <details className="mt-3 text-sm">
                   <summary className="cursor-pointer text-ink-muted">
