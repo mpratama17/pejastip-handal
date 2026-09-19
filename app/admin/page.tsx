@@ -3,7 +3,7 @@
 import { useEffect, useState } from "react";
 import Link from "next/link";
 import { supabase } from "@/lib/supabase/client";
-import { formatIDR } from "@/lib/format";
+import { formatIDR, formatDateID } from "@/lib/format";
 import { useConfirm } from "@/components/admin/confirm-dialog";
 import type { Database } from "@/types/database";
 
@@ -81,6 +81,7 @@ export default function AdminDashboardPage() {
           <table className="w-full text-sm">
             <thead className="border-b border-ink bg-surface-sunken text-left">
               <tr>
+                <th className="px-4 py-2 font-medium">Tanggal</th>
                 <th className="px-4 py-2 font-medium">Kode</th>
                 <th className="px-4 py-2 font-medium">Customer</th>
                 <th className="px-4 py-2 font-medium">Event</th>
@@ -90,6 +91,7 @@ export default function AdminDashboardPage() {
             <tbody>
               {recentOrders.map((o) => (
                 <tr key={o.id} className="border-t-1 border-line">
+                  <td className="whitespace-nowrap px-4 py-2 text-ink-muted">{formatDateID(o.created_at)}</td>
                   <td className="px-4 py-2">
                     <Link href={`/admin/orders/detail?id=${o.id}`} className="font-medium text-link hover:underline">
                       {o.order_code}
