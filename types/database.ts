@@ -335,6 +335,9 @@ export type Database = {
           id: string
           idempotency_key: string | null
           order_code: string
+          refund_amount_idr: number | null
+          refund_note: string | null
+          refunded_at: string | null
           status: Database["public"]["Enums"]["order_status"]
           subtotal_idr: number
           total_idr: number | null
@@ -350,6 +353,9 @@ export type Database = {
           id?: string
           idempotency_key?: string | null
           order_code: string
+          refund_amount_idr?: number | null
+          refund_note?: string | null
+          refunded_at?: string | null
           status?: Database["public"]["Enums"]["order_status"]
           subtotal_idr: number
           total_idr?: number | null
@@ -365,6 +371,9 @@ export type Database = {
           id?: string
           idempotency_key?: string | null
           order_code?: string
+          refund_amount_idr?: number | null
+          refund_note?: string | null
+          refunded_at?: string | null
           status?: Database["public"]["Enums"]["order_status"]
           subtotal_idr?: number
           total_idr?: number | null
@@ -576,15 +585,18 @@ export type Database = {
       v_order_payment: {
         Row: {
           balance_idr: number | null
+          gross_paid_idr: number | null
           order_id: string | null
           paid_idr: number | null
           payment_state: string | null
+          refunded_idr: number | null
           total_idr: number | null
         }
         Relationships: []
       }
     }
     Functions: {
+      admin_clear_refund: { Args: { p_order_id: string }; Returns: undefined }
       admin_create_order: {
         Args: {
           p_admin_notes: string
@@ -626,6 +638,15 @@ export type Database = {
           p_paid_at: string
         }
         Returns: string
+      }
+      admin_record_refund: {
+        Args: {
+          p_amount_idr: number
+          p_note: string
+          p_order_id: string
+          p_refunded_at: string
+        }
+        Returns: undefined
       }
       admin_review_payment: {
         Args: {

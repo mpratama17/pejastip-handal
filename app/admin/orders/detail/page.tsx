@@ -183,6 +183,8 @@ function OrderDetail() {
         <SummaryCard label="Sisa tagihan" value={formatIDR(paymentState?.balance_idr ?? 0)} accent />
       </div>
 
+      <RefundPanel order={order} paymentState={paymentState} onChanged={load} />
+
       <ItemsSection order={order} items={items} onChanged={load} />
 
       <div className="mt-8">
@@ -689,6 +691,156 @@ function ItemsSection({ order, items, onChanged }: { order: OrderRow; items: Ord
             </div>
           </div>
           <p className="mt-2 text-xs text-ink-faint">Buku lama tetap memakai harga saat order; buku baru memakai harga batch sekarang.</p>
+        </div>
+      )}
+    </div>
+  );
+}
+
+
+// Kelebihan bayar dikembalikan admin di luar aplikasi; yang dicatat di sini cuma
+// faktanya. Begitu tercatat, v_order_payment menghitung dari pembayaran bersih,
+// jadi chip berhenti bilang "Lebih Bayar" dan tracker customer ikut benar.
+function RefundPanel({
+  order,
+  paymentState,
+  onChanged,
+}: {
+  order: OrderRow;
+  paymentState: PaymentState | null;
+  onChanged: () => void;
+}) {
+  const [open, setOpen] = useState(false);
+  const [amount, setAmount] = useState("");
+  const [refundedAt, setRefundedAt] = useState(() => new Date().toISOString().slice(0, 10));
+  const [note, setNote] = useState("");
+  const [busy, setBusy] = useState(false);
+  const [error, setError] = useState<string | null>(null);
+  const confirm = useConfirm();
+
+  const sudahDikembalikan = order.refund_amount_idr ?? 0;
+  const lebih = Math.max((paymentState?.paid_idr ?? 0) - (order.total_idr ?? 0), 0);
+
+  // Tidak ada kelebihan dan belum pernah ada pengembalian: tidak usah tampil.
+  if (lebih === 0 && sudahDikembalikan === 0) return null;
+
+  async function save() {
+    const n = Number(amount);
+    if (!Number.isInteger(n) || n <= 0) return setError("Nominal pengembalian harus angka bulat lebih dari 0.");
+    setBusy(true);
+    setError(null);
+    const { error } = await supabase.rpc("admin_record_refund", {
+      p_order_id: order.id,
+      p_amount_idr: n,
+      p_refunded_at: refundedAt,
+      p_note: note.trim(),
+    });
+    setBusy(false);
+    if (error) return setError(error.message);
+    setOpen(false);
+    setAmount("");
+    setNote("");
+    onChanged();
+  }
+
+  async function clear() {
+    const ok = await confirm({
+      title: "Batalkan catatan pengembalian?",
+      body: `Catatan pengembalian ${formatIDR(sudahDikembalikan)} akan dihapus dan status bayar dihitung ulang.\n\nUangnya sendiri tidak ikut kembali — ini cuma pencatatan.`,
+      confirmLabel: "Batalkan catatan",
+      tone: "danger",
+    });
+    if (!ok) return;
+    setBusy(true);
+    setError(null);
+    const { error } = await supabase.rpc("admin_clear_refund", { p_order_id: order.id });
+    setBusy(false);
+    if (error) return setError(error.message);
+    onChanged();
+  }
+
+  if (sudahDikembalikan > 0) {
+    return (
+      <div className="mt-4 rounded-lg border border-border bg-surface p-4">
+        <p className="text-sm font-semibold text-ink">
+          Kelebihan bayar sudah dikembalikan: {formatIDR(sudahDikembalikan)}
+        </p>
+        <p className="mt-1 text-xs text-ink-muted">
+          {order.refunded_at ? `Dikembalikan ${formatDateID(order.refunded_at)}. ` : ""}
+          Total transfer masuk {formatIDR(paymentState?.gross_paid_idr ?? 0)}, terhitung terbayar{" "}
+          {formatIDR(paymentState?.paid_idr ?? 0)}.
+          {order.refund_note ? ` Catatan: ${order.refund_note}` : ""}
+        </p>
+        {error && <p role="alert" className="mt-2 text-sm text-danger">{error}</p>}
+        <button
+          onClick={clear}
+          disabled={busy}
+          className="mt-3 rounded-md border border-border px-3 py-1.5 text-xs font-semibold hover:bg-surface-sunken disabled:opacity-60"
+        >
+          Batalkan catatan
+        </button>
+      </div>
+    );
+  }
+
+  return (
+    <div className="mt-4 rounded-lg border-2 border-ink bg-info-soft p-4 shadow-hard">
+      <p className="font-display text-sm font-bold text-ink">Customer kelebihan bayar {formatIDR(lebih)}</p>
+      <p className="mt-1 text-xs text-ink-muted">
+        Kembalikan uangnya lewat transfer seperti biasa, lalu catat di sini supaya status bayarnya berhenti
+        bilang Lebih Bayar.
+      </p>
+      {error && <p role="alert" className="mt-2 text-sm text-danger">{error}</p>}
+      {!open ? (
+        <button
+          onClick={() => {
+            setAmount(String(lebih));
+            setOpen(true);
+          }}
+          className="btn btn-primary press mt-3 px-4 py-2 text-sm font-semibold"
+        >
+          Catat pengembalian
+        </button>
+      ) : (
+        <div className="mt-3 grid max-w-2xl gap-3 sm:grid-cols-3">
+          <label className="block text-xs font-semibold text-ink">
+            Nominal (Rp)
+            <input
+              type="number"
+              min={1}
+              step={1}
+              value={amount}
+              onChange={(e) => setAmount(e.target.value)}
+              className="mt-1 w-full rounded-md border border-border px-2 py-1.5 text-sm tabular-nums"
+            />
+          </label>
+          <label className="block text-xs font-semibold text-ink">
+            Tanggal dikembalikan
+            <input
+              type="date"
+              value={refundedAt}
+              onChange={(e) => setRefundedAt(e.target.value)}
+              className="mt-1 w-full rounded-md border border-border px-2 py-1.5 text-sm"
+            />
+          </label>
+          <label className="block text-xs font-semibold text-ink">
+            Catatan (opsional)
+            <input
+              value={note}
+              maxLength={500}
+              onChange={(e) => setNote(e.target.value)}
+              placeholder="mis. transfer balik BCA"
+              className="mt-1 w-full rounded-md border border-border px-2 py-1.5 text-sm font-normal"
+            />
+          </label>
+          <div className="flex gap-2 sm:col-span-3">
+            <button onClick={save} disabled={busy} className="btn btn-primary press px-4 py-2 text-sm font-semibold disabled:opacity-60">
+              {busy ? "Menyimpan…" : "Simpan"}
+            </button>
+            <button onClick={() => setOpen(false)} className="btn btn-secondary press px-4 py-2 text-sm">
+              Batal
+            </button>
+          </div>
         </div>
       )}
     </div>
