@@ -30,6 +30,9 @@ export default function AdminBooksPage() {
   const [eventId, setEventId] = useState<string>("");
   const [items, setItems] = useState<EventItemWithBook[]>([]);
   const [search, setSearch] = useState("");
+  // Berapa eksemplar tiap baris sudah dipesan (order non-batal). Stok yang
+  // dilihat customer = stok diset dikurangi ini.
+  const [taken, setTaken] = useState<Record<string, number>>({});
   const { sort, onSort } = useSort<BookSortKey>({ key: "title", dir: "asc" });
   const [importResults, setImportResults] = useState<ImportResult[]>([]);
   const [importing, setImporting] = useState(false);
@@ -53,10 +56,10 @@ export default function AdminBooksPage() {
       : key === "author" ? i.books.author
       : key === "format" ? BOOK_FORMAT_LABEL[i.books.format]
       : key === "price" ? i.price_idr
-      : key === "stock" ? (i.stock ?? Number.POSITIVE_INFINITY) // ∞ itu stok terbanyak, bukan data kosong
+      : key === "stock" ? (i.stock === null ? Number.POSITIVE_INFINITY : Math.max(i.stock - (taken[i.id] ?? 0), 0))
       : i.books.created_at,
     );
-  }, [items, search, sort]);
+  }, [items, search, sort, taken]);
 
   const [coverFile, setCoverFile] = useState<File | null>(null);
   const [savingManual, setSavingManual] = useState(false);
@@ -65,6 +68,7 @@ export default function AdminBooksPage() {
 
   const [editing, setEditing] = useState<string | null>(null);
   const [rowError, setRowError] = useState<string | null>(null);
+  const [rowOk, setRowOk] = useState<string | null>(null);
   const confirm = useConfirm();
 
   useEffect(() => {
@@ -87,8 +91,28 @@ export default function AdminBooksPage() {
       .select("*, books(*)")
       .eq("event_id", id)
       .order("title", { referencedTable: "books" });
-    setItems((data as unknown as EventItemWithBook[]) ?? []);
+    const list = (data as unknown as EventItemWithBook[]) ?? [];
+    setItems(list);
+
+    // Kolom Stok dulu menampilkan angka yang diset admin, yang memang tidak
+    // pernah berubah — jadi stok terlihat tidak pernah berkurang walau order
+    // masuk. Yang dilihat customer adalah sisanya, dan itu yang dihitung di
+    // sini. get_catalogue tidak dipakai karena dia menyaring item nonaktif dan
+    // event draft, sedangkan tabel ini menampilkan semuanya.
+    const ids = list.map((i) => i.id);
+    if (ids.length === 0) return setTaken({});
+    const { data: rows } = await supabase
+      .from("order_items")
+      .select("event_item_id, qty, orders!inner(status)")
+      .in("event_item_id", ids)
+      .neq("orders.status", "cancelled");
+    const acc: Record<string, number> = {};
+    for (const r of rows ?? []) acc[r.event_item_id] = (acc[r.event_item_id] ?? 0) + r.qty;
+    setTaken(acc);
   }
+
+  const sisaStok = (item: EventItemWithBook) =>
+    item.stock === null ? null : Math.max(item.stock - (taken[item.id] ?? 0), 0);
 
   useEffect(() => {
     if (eventId) loadItems(eventId);
@@ -239,6 +263,7 @@ export default function AdminBooksPage() {
     });
     if (!ok) return;
     setRowError(null);
+    setRowOk(null);
     const { error } = await supabase.from("event_items").delete().eq("id", item.id);
     // 23503 = masih dipakai order_items. Itu memang harus ditolak. Alasannya
     // dikabarkan lewat dialog, bukan teks di bawah tabel: tabelnya discroll ke
@@ -259,6 +284,7 @@ export default function AdminBooksPage() {
       });
       return;
     }
+    setRowOk(`"${item.books.title}" dihapus dari batch ini.`);
     loadItems(eventId);
   }
 
@@ -455,6 +481,12 @@ export default function AdminBooksPage() {
             className="mt-6 w-72 rounded-sm border border-border px-3 py-2 text-sm"
           />
 
+          {rowOk && (
+            <p role="status" className="mt-3 text-sm font-medium text-success">
+              ✓ {rowOk}
+            </p>
+          )}
+
           <div className="mt-3 overflow-x-auto rounded-lg border border-border">
             <table className="w-full text-sm">
               <thead className="border-b border-ink bg-surface-sunken text-left">
@@ -464,7 +496,7 @@ export default function AdminBooksPage() {
                   <SortTh label="Penulis" sortKey="author" sort={sort} onSort={onSort} />
                   <SortTh label="Format" sortKey="format" sort={sort} onSort={onSort} />
                   <SortTh label="Harga" sortKey="price" sort={sort} onSort={onSort} align="right" />
-                  <SortTh label="Stok" sortKey="stock" sort={sort} onSort={onSort} align="right" />
+                  <SortTh label="Sisa stok" sortKey="stock" sort={sort} onSort={onSort} align="right" />
                   <th className="px-4 py-2 font-medium">Aktif</th>
                   <SortTh label="Ditambahkan" sortKey="created" sort={sort} onSort={onSort} />
                   <th className="px-4 py-2 text-right font-medium">Aksi</th>
@@ -477,13 +509,29 @@ export default function AdminBooksPage() {
                   ) : (
                     <tr key={item.id} className="border-t-1 border-line">
                       <td className="px-4 py-2">
-                        <CoverCell book={item.books} onChanged={() => loadItems(eventId)} />
+                        <CoverCell
+                          book={item.books}
+                          onChanged={() => loadItems(eventId)}
+                          onUploaded={(m) => {
+                            setRowError(null);
+                            setRowOk(m);
+                          }}
+                        />
                       </td>
                       <td className="px-4 py-2 font-medium text-ink">{item.books.title}</td>
                       <td className="px-4 py-2 text-ink-muted">{item.books.author ?? "—"}</td>
                       <td className="px-4 py-2 text-ink-muted">{BOOK_FORMAT_LABEL[item.books.format]}</td>
                       <td className="px-4 py-2 text-right tabular-nums text-ink">{formatIDR(item.price_idr)}</td>
-                      <td className="px-4 py-2 text-right tabular-nums text-ink">{item.stock ?? "∞"}</td>
+                      <td className="whitespace-nowrap px-4 py-2 text-right tabular-nums text-ink">
+                        {item.stock === null ? (
+                          "∞"
+                        ) : (
+                          <>
+                            {sisaStok(item)}
+                            <span className="text-ink-faint"> / {item.stock}</span>
+                          </>
+                        )}
+                      </td>
                       <td className="px-4 py-2">
                         <button
                           onClick={() => toggleActive(item)}
@@ -589,7 +637,7 @@ function EditRow({
       <td colSpan={colSpan} className="px-4 py-4">
         <div className="flex items-start gap-4">
           <div className="w-28 shrink-0">
-            <CoverCell book={b} onChanged={onCancel} />
+            <CoverCell book={b} onChanged={onCancel} onUploaded={() => {}} />
           </div>
           <div className="min-w-0 flex-1">
             <div className="grid gap-3 sm:grid-cols-2 lg:grid-cols-3">
@@ -691,7 +739,7 @@ async function uploadCover(bookId: string, file: File): Promise<string | null> {
 }
 
 // Buku tanpa sampul tetap memakai sampul generatif (docs/04 §6).
-function CoverCell({ book, onChanged }: { book: BookRow; onChanged: () => void }) {
+function CoverCell({ book, onChanged, onUploaded }: { book: BookRow; onChanged: () => void; onUploaded: (msg: string) => void }) {
   const [busy, setBusy] = useState(false);
   const [error, setError] = useState<string | null>(null);
 
@@ -701,6 +749,7 @@ function CoverCell({ book, onChanged }: { book: BookRow; onChanged: () => void }
     const err = await uploadCover(book.id, file);
     setBusy(false);
     if (err) return setError(err);
+    onUploaded(`Sampul "${book.title}" berhasil diunggah.`);
     onChanged();
   }
 
