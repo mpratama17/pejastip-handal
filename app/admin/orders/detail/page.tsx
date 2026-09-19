@@ -440,6 +440,13 @@ const OVERRIDE_STATUSES: ItemStatus[] = ["not_shipped", "shipped_to_indo", "arri
 
 function ItemsSection({ order, items, onChanged }: { order: OrderRow; items: OrderItemRow[]; onChanged: () => void }) {
   const [editing, setEditing] = useState(false);
+  // Status kirim tidak lagi tersimpan begitu dropdown berubah. Tanpa tombol,
+  // admin tidak punya cara tahu apakah perubahannya masuk — datanya benar,
+  // tapi keyakinannya hilang. Draft per baris; tombol Simpan cuma muncul kalau
+  // nilainya memang beda dari yang tersimpan.
+  const [draftStatus, setDraftStatus] = useState<Record<string, ItemStatus>>({});
+  const [savingId, setSavingId] = useState<string | null>(null);
+  const [savedId, setSavedId] = useState<string | null>(null);
   const [draft, setDraft] = useState<{ event_item_id: string; qty: number }[]>([]);
   const [catalog, setCatalog] = useState<CatalogItem[]>([]);
   const [adding, setAdding] = useState("");
@@ -482,10 +489,21 @@ function ItemsSection({ order, items, onChanged }: { order: OrderRow; items: Ord
     onChanged();
   }
 
-  async function setStatus(itemId: string, status: ItemStatus) {
+  async function saveStatus(itemId: string) {
+    const status = draftStatus[itemId];
+    if (!status) return;
     setError(null);
+    setSavedId(null);
+    setSavingId(itemId);
     const { error } = await supabase.rpc("admin_set_item_status", { p_item_id: itemId, p_status: status });
+    setSavingId(null);
     if (error) return setError(error.message);
+    setDraftStatus((prev) => {
+      const next = { ...prev };
+      delete next[itemId];
+      return next;
+    });
+    setSavedId(itemId);
     onChanged();
   }
 
@@ -526,18 +544,38 @@ function ItemsSection({ order, items, onChanged }: { order: OrderRow; items: Ord
                   <td className="px-4 py-2">
                     {canEdit && it.shipment_id === null && OVERRIDE_STATUSES.includes(it.shipping_status) ? (
                       // R15: satu buku bisa beda status dari batch-nya (mis. tertinggal).
-                      <select
-                        aria-label={`Status kirim ${titleOf(it)}`}
-                        value={it.shipping_status}
-                        onChange={(e) => setStatus(it.id, e.target.value as ItemStatus)}
-                        className="rounded-sm border border-border bg-surface px-2 py-1 text-sm"
-                      >
-                        {OVERRIDE_STATUSES.map((s) => (
-                          <option key={s} value={s}>
-                            {SHIPPING_STATUS_MAP[s].label}
-                          </option>
-                        ))}
-                      </select>
+                      <div className="flex flex-wrap items-center gap-2">
+                        <select
+                          aria-label={`Status kirim ${titleOf(it)}`}
+                          value={draftStatus[it.id] ?? it.shipping_status}
+                          onChange={(e) => {
+                            setSavedId(null);
+                            setDraftStatus((prev) => ({ ...prev, [it.id]: e.target.value as ItemStatus }));
+                          }}
+                          className="rounded-sm border border-border bg-surface px-2 py-1 text-sm"
+                        >
+                          {OVERRIDE_STATUSES.map((s) => (
+                            <option key={s} value={s}>
+                              {SHIPPING_STATUS_MAP[s].label}
+                            </option>
+                          ))}
+                        </select>
+                        {draftStatus[it.id] && draftStatus[it.id] !== it.shipping_status && (
+                          <button
+                            type="button"
+                            onClick={() => saveStatus(it.id)}
+                            disabled={savingId === it.id}
+                            className="btn btn-primary press px-3 py-1 text-xs font-semibold disabled:opacity-60"
+                          >
+                            {savingId === it.id ? "Menyimpan…" : "Simpan"}
+                          </button>
+                        )}
+                        {savedId === it.id && (
+                          <span role="status" className="text-xs font-medium text-success">
+                            Tersimpan
+                          </span>
+                        )}
+                      </div>
                     ) : order.status === "cancelled" ? (
                       <span className="text-ink-faint">—</span>
                     ) : (

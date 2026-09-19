@@ -61,9 +61,11 @@ export default function AdminDashboardPage() {
     <div>
       <h1 className="font-display text-xl font-bold text-ink">Dashboard</h1>
 
+      <PerluDicek pendingPayments={stats?.pendingPayments} newOrders={stats?.newOrders} />
+
       <div className="mt-6 grid grid-cols-2 gap-4 lg:grid-cols-4">
-        <StatCard label="Order baru" value={stats?.newOrders} href="/admin/orders" />
-        <StatCard label="Bukti pending" value={stats?.pendingPayments} href="/admin/payments" />
+        <StatCard label="Order baru" value={stats?.newOrders} href="/admin/orders" alert={!!stats?.newOrders} />
+        <StatCard label="Bukti pending" value={stats?.pendingPayments} href="/admin/payments" alert={!!stats?.pendingPayments} />
         <StatCard label="Piutang total" value={stats ? formatIDR(stats.totalReceivable) : undefined} href="/admin/customers" />
         <StatCard label="Event aktif" value={stats?.activeEvents} href="/admin/events" />
       </div>
@@ -119,12 +121,58 @@ export default function AdminDashboardPage() {
   );
 }
 
-function StatCard({ label, value, href }: { label: string; value: string | number | undefined; href: string }) {
+// `alert` dipakai untuk kartu yang isinya pekerjaan tertunda. Tanpa ini kartu
+// bernilai 0 dan bernilai 5 terlihat persis sama, jadi tidak ada beda antara
+// "tidak ada kerjaan" dan "ada lima yang menunggu".
+function StatCard({
+  label,
+  value,
+  href,
+  alert = false,
+}: {
+  label: string;
+  value: string | number | undefined;
+  href: string;
+  alert?: boolean;
+}) {
   return (
-    <Link href={href} className="card press stat p-4">
+    <Link href={href} className={`card press stat p-4 ${alert ? "bg-primary-soft" : ""}`}>
       <p className="text-xs font-medium text-ink-muted">{label}</p>
       <p className="mt-1 font-display text-2xl font-extrabold text-ink">{value ?? "…"}</p>
+      {alert && <p className="mt-0.5 text-xs font-semibold text-accent-ink">Perlu dicek</p>}
     </Link>
+  );
+}
+
+// Spanduk ini yang menjawab "admin baru login, tidak tahu ada yang menunggu".
+// Hanya muncul kalau memang ada kerjaan; kalau kosong, tidak ada apa-apa di
+// sini supaya kemunculannya tetap berarti.
+function PerluDicek({ pendingPayments, newOrders }: { pendingPayments?: number; newOrders?: number }) {
+  const antrean = [
+    pendingPayments
+      ? { teks: `${pendingPayments} bukti transfer menunggu verifikasi`, href: "/admin/payments", aksi: "Buka Pembayaran" }
+      : null,
+    newOrders
+      ? { teks: `${newOrders} order baru belum dikonfirmasi`, href: "/admin/orders", aksi: "Buka Order" }
+      : null,
+  ].filter((x) => x !== null);
+
+  if (antrean.length === 0) return null;
+
+  return (
+    <div className="mt-4 rounded-lg border-2 border-ink bg-warning-soft p-4 shadow-hard">
+      <p className="font-display text-sm font-bold text-ink">Ada yang menunggu kamu</p>
+      <ul className="mt-2 flex flex-col gap-1.5">
+        {antrean.map((a) => (
+          <li key={a.href} className="flex flex-wrap items-center justify-between gap-2 text-sm">
+            <span className="text-ink">{a.teks}</span>
+            <Link href={a.href} className="font-semibold text-link hover:underline">
+              {a.aksi}
+            </Link>
+          </li>
+        ))}
+      </ul>
+    </div>
   );
 }
 
