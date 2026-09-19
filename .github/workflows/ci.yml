@@ -31,9 +31,6 @@ jobs:
 
       - run: pnpm install --frozen-lockfile
 
-      - name: Tipe
-        run: pnpm exec tsc --noEmit
-
       - name: Lint
         run: pnpm lint
 
@@ -45,6 +42,12 @@ jobs:
         env:
           NEXT_PUBLIC_SUPABASE_URL: ${{ secrets.SUPABASE_URL }}
           NEXT_PUBLIC_SUPABASE_ANON_KEY: ${{ secrets.SUPABASE_ANON_KEY }}
+
+      # HARUS sesudah build, bukan sebelum. Tipe seperti LayoutProps dihasilkan
+      # next build ke .next/types; di laptop yang .next-nya masih ada, tsc lolos
+      # walau di checkout bersih gagal. Justru itu yang ketangkap CI pertama.
+      - name: Tipe
+        run: pnpm exec tsc --noEmit
 
       # Gagal build memang sudah gagal di atas; ini menangkap kasus lain:
       # env kosong membuat build tetap lolos tapi halaman mati diam-diam.
