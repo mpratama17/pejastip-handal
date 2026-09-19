@@ -15,7 +15,7 @@ const jakarta = Plus_Jakarta_Sans({
 
 export const metadata: Metadata = {
   title: "Pejastip Handal",
-  description: "Titip beli buku impor — order per batch, tracker berbasis kode.",
+  description: "Titip beli buku impor. Order per batch, tracker berbasis kode.",
 };
 
 export default function RootLayout({ children }: LayoutProps<"/">) {

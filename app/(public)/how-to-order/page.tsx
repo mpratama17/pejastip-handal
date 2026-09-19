@@ -24,7 +24,7 @@ export default function HowToOrderPage() {
         <div className="flex flex-col card p-5">
           <h2 className="font-display text-xl font-bold">Lewat form order</h2>
           <p className="mt-2 flex-1 text-sm text-ink-muted">
-            Untuk batch yang punya katalog di web — sebagian besar pre-order penerbit.
+            Untuk batch yang punya katalog di web, sebagian besar pre-order penerbit.
           </p>
           <Link
             href="/order"
@@ -36,7 +36,7 @@ export default function HowToOrderPage() {
         <div className="flex flex-col card p-5">
           <h2 className="font-display text-xl font-bold">Lewat WhatsApp</h2>
           <p className="mt-2 flex-1 text-sm text-ink-muted">
-            Untuk batch tanpa katalog — misalnya ready stock gudang atau jastip bazar. Sebutkan nama batch-nya saat chat.
+            Untuk batch tanpa katalog, misalnya ready stock gudang atau jastip bazar. Sebutkan nama batch-nya saat chat.
           </p>
           {s?.wa_admin_number && (
             <a

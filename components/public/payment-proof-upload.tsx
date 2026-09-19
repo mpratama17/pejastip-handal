@@ -90,7 +90,7 @@ export function PaymentProofUpload({
   if (status === "done") {
     return (
       <p className="rounded-md bg-success-soft p-3 text-sm text-success" role="status">
-        Bukti transfer {formatIDR(Number(amount))} terkirim. Admin akan memverifikasi — status bayar berubah setelahnya.
+        Bukti transfer {formatIDR(Number(amount))} terkirim. Admin akan memverifikasi, lalu status bayar berubah.
       </p>
     );
   }

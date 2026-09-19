@@ -246,7 +246,7 @@ export default function AdminNewOrderPage() {
                 .filter((c) => !inOrder.has(c.id))
                 .map((c) => (
                   <option key={c.id} value={c.id}>
-                    {c.books?.title} — {formatIDR(c.price_idr)}
+                    {c.books?.title} ({formatIDR(c.price_idr)})
                     {c.stock !== null ? ` (stok ${c.stock})` : ""}
                   </option>
                 ))}
@@ -259,7 +259,7 @@ export default function AdminNewOrderPage() {
 
         <div className="mt-3 grid grid-cols-[1fr_9rem_auto] items-end gap-2 border-t-1 border-line pt-3">
           <label className="block text-xs font-medium text-ink-muted">
-            {eventId && catalog.length === 0 ? "Batch ini tanpa katalog — tulis judul buku" : "Buku di luar katalog"}
+            {eventId && catalog.length === 0 ? "Batch ini tanpa katalog, tulis judul buku" : "Buku di luar katalog"}
             <input value={manual.title} onChange={(e) => setManual({ ...manual, title: e.target.value })} placeholder="Judul" className={inputCls} />
           </label>
           <label className="block text-xs font-medium text-ink-muted">

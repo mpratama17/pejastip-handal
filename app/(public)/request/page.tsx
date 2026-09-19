@@ -59,8 +59,8 @@ export default function RequestPage() {
             Cari dulu judul atau ISBN-nya di{" "}
             <Link href="/catalogue" className="font-medium text-link hover:underline">
               katalog
-            </Link>{" "}
-            — mungkin sudah tersedia.
+            </Link>
+            {", mungkin sudah tersedia."}
           </li>
           <li>Pastikan ISBN sesuai format yang kamu mau (paperback/hardcover), bukan audiobook atau ebook.</li>
           <li>Buku dari penerbit independen kecil belum tentu bisa dipesan.</li>

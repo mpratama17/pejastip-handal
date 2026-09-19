@@ -398,7 +398,7 @@ function RecordPaymentForm({
       {balance > 0 && valid && amountNum !== balance && (
         <p className="mt-2 text-xs text-ink-muted">
           {amountNum < balance
-            ? `Sisa tagihan jadi ${formatIDR(balance - amountNum)} — status akan "DP Diterima".`
+            ? `Sisa tagihan jadi ${formatIDR(balance - amountNum)}, status akan "DP Diterima".`
             : `Lebih ${formatIDR(amountNum - balance)} dari sisa tagihan.`}
         </p>
       )}
@@ -651,7 +651,7 @@ function ItemsSection({ order, items, onChanged }: { order: OrderRow; items: Ord
               <option value="">{catalog.length ? "Pilih buku dari batch ini…" : "Memuat katalog…"}</option>
               {addable.map((c) => (
                 <option key={c.id} value={c.id}>
-                  {c.books?.title} — {formatIDR(c.price_idr)}
+                  {c.books?.title} ({formatIDR(c.price_idr)})
                   {c.stock !== null ? ` (stok ${c.stock})` : ""}
                 </option>
               ))}
@@ -746,7 +746,7 @@ function RefundPanel({
   async function clear() {
     const ok = await confirm({
       title: "Batalkan catatan pengembalian?",
-      body: `Catatan pengembalian ${formatIDR(sudahDikembalikan)} akan dihapus dan status bayar dihitung ulang.\n\nUangnya sendiri tidak ikut kembali — ini cuma pencatatan.`,
+      body: `Catatan pengembalian ${formatIDR(sudahDikembalikan)} akan dihapus dan status bayar dihitung ulang.\n\nUangnya sendiri tidak ikut kembali, ini cuma pencatatan.`,
       confirmLabel: "Batalkan catatan",
       tone: "danger",
     });
