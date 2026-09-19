@@ -159,7 +159,7 @@ function Tracker() {
                       {" "}Pembayaran {formatIDR(o.paid_idr)} akan diselesaikan admin
                       {settings?.wa_admin_number && (
                         <>
-                          {" "}—{" "}
+                          {", silakan "}
                           <a
                             href={waLink(settings.wa_admin_number, `Halo Admin, order ${o.order_code} saya dibatalkan. Bagaimana dengan pembayaran saya?`)}
                             target="_blank"

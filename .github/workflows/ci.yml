@@ -1,0 +1,57 @@
+name: CI
+
+# Sampai sekarang yang memverifikasi tiap perubahan cuma pengecekan di laptop.
+# Kalau terlewat, tidak ada yang menahan. Ini jaring pengamannya: tiap PR dan
+# tiap push ke main harus lulus tipe, lint, dan build sebelum dianggap beres.
+
+on:
+  pull_request:
+  push:
+    branches: [main]
+
+# PR yang dipush berkali-kali tidak perlu mengantre; batalkan yang lama.
+concurrency:
+  group: ci-${{ github.ref }}
+  cancel-in-progress: true
+
+jobs:
+  check:
+    runs-on: ubuntu-latest
+    steps:
+      - uses: actions/checkout@v4
+
+      - uses: pnpm/action-setup@v4
+
+      # Versi Node diambil dari .node-version, satu sumber dengan yang dipakai
+      # Cloudflare Pages. Jangan ditulis ulang di sini supaya tidak bisa beda.
+      - uses: actions/setup-node@v4
+        with:
+          node-version-file: .node-version
+          cache: pnpm
+
+      - run: pnpm install --frozen-lockfile
+
+      - name: Tipe
+        run: pnpm exec tsc --noEmit
+
+      - name: Lint
+        run: pnpm lint
+
+      # Build dijalankan dengan env yang sama seperti produksi. Kunci anon
+      # memang ikut terkirim ke browser dan dijaga RLS, jadi aman di sini.
+      # service_role TIDAK boleh ada di workflow mana pun.
+      - name: Build
+        run: pnpm build
+        env:
+          NEXT_PUBLIC_SUPABASE_URL: ${{ secrets.SUPABASE_URL }}
+          NEXT_PUBLIC_SUPABASE_ANON_KEY: ${{ secrets.SUPABASE_ANON_KEY }}
+
+      # Gagal build memang sudah gagal di atas; ini menangkap kasus lain:
+      # env kosong membuat build tetap lolos tapi halaman mati diam-diam.
+      - name: Pastikan halaman kunci ikut ter-build
+        run: |
+          for f in out/index.html out/catalogue.html out/order.html out/track.html out/admin.html; do
+            test -s "$f" || { echo "::error::$f tidak ada atau kosong"; exit 1; }
+          done
+          grep -q "supabase.co" out/*.html out/_next/static/chunks/*.js \
+            || { echo "::error::URL Supabase tidak ikut ter-build, cek secret SUPABASE_URL"; exit 1; }

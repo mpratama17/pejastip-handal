@@ -142,10 +142,10 @@ function OrderForm() {
     if (error) {
       // Pesan dari RPC sudah ramah (raise exception berbahasa Indonesia);
       // error lain (jaringan, dsb.) aman dicoba ulang berkat idempotency key.
-      return setError(error.code === "P0001" ? error.message : "Order gagal terkirim. Coba lagi — order tidak akan dobel.");
+      return setError(error.code === "P0001" ? error.message : "Order gagal terkirim. Coba lagi, order tidak akan dobel.");
     }
     const row = data?.[0];
-    if (!row) return setError("Order mungkin sudah tercatat tapi konfirmasinya tidak terbaca. Tekan Kirim Order lagi — order tidak akan dobel.");
+    if (!row) return setError("Order mungkin sudah tercatat tapi konfirmasinya tidak terbaca. Tekan Kirim Order lagi, order tidak akan dobel.");
     setResult(row);
     window.scrollTo({ top: 0 });
   }
@@ -316,7 +316,7 @@ function OrderForm() {
             </fieldset>
             <p className="mt-4 rounded-md border border-ink bg-sky-soft p-3 text-sm">
               {paymentType === "dp"
-                ? "Sisa tagihan dilunasi saat buku tiba di Indonesia — kami kabari lewat WhatsApp."
+                ? "Sisa tagihan dilunasi saat buku tiba di Indonesia. Kami kabari lewat WhatsApp."
                 : "Tidak ada tagihan lagi setelah pembayaran ini terverifikasi (di luar ongkir)."}
             </p>
             <label className="mt-4 block text-sm font-medium">
@@ -524,7 +524,7 @@ function OrderSuccess({ result }: { result: OrderResult }) {
           <>
             <p className="font-display text-3xl font-semibold">Order {result.order_code} tercatat</p>
             <p className="mx-auto mt-2 max-w-md text-sm text-ink/75">
-              Nomor WhatsApp ini sudah terdaftar. Order baru masuk ke kode pelacakan yang sudah kamu punya — pakai kode itu
+              Nomor WhatsApp ini sudah terdaftar. Order baru masuk ke kode pelacakan yang sudah kamu punya, jadi pakai kode itu
               di Lacak Order untuk upload bukti transfer. Lupa kode? Chat admin.
             </p>
           </>

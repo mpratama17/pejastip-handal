@@ -145,7 +145,7 @@ export default function AdminBooksPage() {
         const ok = await confirm({
           title: "ISBN ini sudah dipakai buku lain",
           body:
-            `ISBN ${typedIsbn} terdaftar sebagai "${lama.title}"${lama.author ? ` — ${lama.author}` : ""}.\n\n` +
+            `ISBN ${typedIsbn} terdaftar sebagai "${lama.title}"${lama.author ? `, ${lama.author}` : ""}.\n\n` +
             `Melanjutkan akan mengubah judulnya jadi "${manual.title.trim()}" di semua batch yang memakai buku itu, ` +
             `bukan menambah buku baru.\n\nBatalkan kalau ISBN-nya salah ketik.`,
           confirmLabel: "Ya, ubah buku itu",
@@ -313,7 +313,7 @@ export default function AdminBooksPage() {
             <h2 className="text-sm font-semibold text-ink">Import CSV</h2>
             <p className="mt-1 text-xs text-ink-muted">
               Kolom: <code>isbn,title,author,format,price_idr,stock</code>. ISBN yang sudah ada dipakai ulang
-              (tidak duplikat) — aman diimport ulang.
+              (tidak duplikat), jadi aman diimport ulang.
             </p>
             <input
               type="file"
@@ -688,7 +688,7 @@ function EditRow({
               </Field>
             </div>
             <p className="mt-3 text-xs text-ink-muted">
-              Judul, penulis, ISBN, dan format milik daftar buku — ikut berubah di semua batch yang memakai buku ini.
+              Judul, penulis, ISBN, dan format milik daftar buku, jadi ikut berubah di semua batch yang memakai buku ini.
               Harga dan stok hanya untuk batch ini.
             </p>
             <div className="mt-3 flex items-center gap-3">

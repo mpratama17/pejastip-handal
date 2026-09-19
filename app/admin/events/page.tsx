@@ -270,7 +270,7 @@ export default function AdminEventsPage() {
 
 // Status "Buka" tapi di luar jadwal → order ditolak server; beri tahu admin.
 function ScheduleHint({ ev, now }: { ev: EventRow; now: number }) {
-  if (isPastClose(ev, now)) return <p className="mt-1 text-xs text-warning">Lewat tanggal tutup — order ditolak</p>;
+  if (isPastClose(ev, now)) return <p className="mt-1 text-xs text-warning">Lewat tanggal tutup, order ditolak</p>;
   if (isBeforeOpen(ev, now)) return <p className="mt-1 text-xs text-warning">Belum masuk tanggal buka</p>;
   return null;
 }
