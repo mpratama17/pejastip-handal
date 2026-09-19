@@ -8,12 +8,22 @@ const PAYMENT_STATE_MAP: Record<string, { label: string; className: string }> = 
   overpaid: { label: "Lebih Bayar", className: "bg-info-soft text-info" },
 };
 
+// Enam status ini sebenarnya dua perjalanan: luar negeri -> admin (tiga
+// pertama), lalu admin -> customer (tiga terakhir). Label lama "Belum Dikirim"
+// dan "Dikirim" terbaca seperti satu perjalanan yang sama, jadi customer
+// mengira "Belum Dikirim" berarti admin belum mengirim ke dia, padahal artinya
+// bukunya belum berangkat dari luar negeri. Labelnya sekarang menyebut kakinya.
+//
+// `not_shipped` di skema memang menampung dua keadaan sekaligus: belum
+// dibelanjakan, dan sudah dibeli tapi belum berangkat. "Belum Berangkat" jujur
+// untuk dua-duanya; memecahnya jadi dua status butuh migrasi enum, dan itu
+// keputusan terpisah.
 export const SHIPPING_STATUS_MAP: Record<string, { label: string; className: string }> = {
-  not_shipped: { label: "Belum Dikirim", className: "bg-surface-sunken text-ink-muted" },
-  shipped_to_indo: { label: "Di Perjalanan", className: "bg-info-soft text-info" },
+  not_shipped: { label: "Belum Berangkat", className: "bg-surface-sunken text-ink-muted" },
+  shipped_to_indo: { label: "Menuju Indonesia", className: "bg-info-soft text-info" },
   arrived_in_indo: { label: "Tiba di Admin", className: "bg-primary-soft text-ink" },
   waiting_courier: { label: "Menunggu Kurir", className: "bg-warning-soft text-warning" },
-  shipped: { label: "Dikirim", className: "bg-info-soft text-info" },
+  shipped: { label: "Dikirim ke Kamu", className: "bg-info-soft text-info" },
   delivered: { label: "Diterima", className: "bg-success-soft text-success" },
 };
 
