@@ -21,9 +21,9 @@ type ImportResult = Database["public"]["Functions"]["import_catalog_csv"]["Retur
 
 const FORMATS: BookFormat[] = ["paperback", "hardcover", "boxset", "other"];
 
-type BookSortKey = "title" | "author" | "format" | "price" | "stock" | "created";
+type BookSortKey = "title" | "author" | "publisher" | "format" | "price" | "stock" | "created";
 
-type BookFields = { title: string; author: string | null; isbn: string | null; format: BookFormat };
+type BookFields = { title: string; author: string | null; publisher: string | null; isbn: string | null; format: BookFormat };
 
 export default function AdminBooksPage() {
   const [events, setEvents] = useState<EventRow[]>([]);
@@ -42,6 +42,7 @@ export default function AdminBooksPage() {
     isbn: "",
     title: "",
     author: "",
+    publisher: "",
     format: "paperback" as BookFormat,
     price_idr: "",
     stock: "",
@@ -49,11 +50,12 @@ export default function AdminBooksPage() {
   const shown = useMemo(() => {
     const q = search.trim().toLowerCase();
     const found = q
-      ? items.filter((i) => [i.books.title, i.books.author, i.books.isbn].some((v) => v?.toLowerCase().includes(q)))
+      ? items.filter((i) => [i.books.title, i.books.author, i.books.publisher, i.books.isbn].some((v) => v?.toLowerCase().includes(q)))
       : items;
     return sortRows(found, sort, (i, key) =>
       key === "title" ? i.books.title
       : key === "author" ? i.books.author
+      : key === "publisher" ? i.books.publisher
       : key === "format" ? BOOK_FORMAT_LABEL[i.books.format]
       : key === "price" ? i.price_idr
       : key === "stock" ? (i.stock === null ? Number.POSITIVE_INFINITY : Math.max(i.stock - (taken[i.id] ?? 0), 0))
@@ -165,6 +167,7 @@ export default function AdminBooksPage() {
           isbn: manual.isbn || undefined,
           title: manual.title,
           author: manual.author || undefined,
+          publisher: manual.publisher || undefined,
           format: manual.format,
           price_idr: manual.price_idr,
           stock: manual.stock || undefined,
@@ -204,7 +207,7 @@ export default function AdminBooksPage() {
 
     setSavingManual(false);
     setManualOk(`"${manual.title.trim()}" masuk ke katalog${coverFile ? " beserta sampulnya" : ""}.`);
-    setManual({ isbn: "", title: "", author: "", format: "paperback", price_idr: "", stock: "" });
+    setManual({ isbn: "", title: "", author: "", publisher: "", format: "paperback", price_idr: "", stock: "" });
     setCoverFile(null);
     loadItems(eventId);
   }
@@ -312,7 +315,7 @@ export default function AdminBooksPage() {
           <div className="mt-6 rounded-lg border border-border bg-surface p-5">
             <h2 className="text-sm font-semibold text-ink">Import CSV</h2>
             <p className="mt-1 text-xs text-ink-muted">
-              Kolom: <code>isbn,title,author,format,price_idr,stock</code>. ISBN yang sudah ada dipakai ulang
+              Kolom: <code>isbn,title,author,publisher,format,price_idr,stock</code>. ISBN yang sudah ada dipakai ulang
               (tidak duplikat), jadi aman diimport ulang.
             </p>
             <input
@@ -390,6 +393,12 @@ export default function AdminBooksPage() {
                 onChange={(e) => setManual({ ...manual, author: e.target.value })}
                 className="rounded-sm border border-border px-3 py-2 text-sm"
               />
+              <input
+                placeholder="Publisher"
+                value={manual.publisher}
+                onChange={(e) => setManual({ ...manual, publisher: e.target.value })}
+                className="rounded-sm border border-border px-3 py-2 text-sm"
+              />
               <select
                 value={manual.format}
                 onChange={(e) => setManual({ ...manual, format: e.target.value as BookFormat })}
@@ -422,7 +431,7 @@ export default function AdminBooksPage() {
 
             <div className="mt-3 flex flex-wrap items-center gap-3 border-t border-line pt-3">
               <span className="text-xs font-semibold text-ink">Sampul</span>
-              <label className="cursor-pointer text-xs font-semibold text-link hover:underline">
+              <label className="press cursor-pointer rounded-full border border-ink bg-primary px-3 py-1.5 text-sm font-bold text-ink focus-within:ring-2 focus-within:ring-link">
                 {coverFile ? "Ganti file" : "Pilih file"}
                 <input
                   type="file"
@@ -494,6 +503,7 @@ export default function AdminBooksPage() {
                   <th className="px-4 py-2 font-medium">Sampul</th>
                   <SortTh label="Judul" sortKey="title" sort={sort} onSort={onSort} />
                   <SortTh label="Penulis" sortKey="author" sort={sort} onSort={onSort} />
+                  <SortTh label="Publisher" sortKey="publisher" sort={sort} onSort={onSort} />
                   <SortTh label="Format" sortKey="format" sort={sort} onSort={onSort} />
                   <SortTh label="Harga" sortKey="price" sort={sort} onSort={onSort} align="right" />
                   <SortTh label="Sisa stok" sortKey="stock" sort={sort} onSort={onSort} align="right" />
@@ -505,7 +515,7 @@ export default function AdminBooksPage() {
               <tbody>
                 {shown.map((item) =>
                   editing === item.id ? (
-                    <EditRow key={item.id} item={item} colSpan={9} onSave={saveRow} onCancel={() => setEditing(null)} />
+                    <EditRow key={item.id} item={item} colSpan={10} onSave={saveRow} onCancel={() => setEditing(null)} />
                   ) : (
                     <tr key={item.id} className="border-t-1 border-line">
                       <td className="px-4 py-2">
@@ -520,6 +530,7 @@ export default function AdminBooksPage() {
                       </td>
                       <td className="px-4 py-2 font-medium text-ink">{item.books.title}</td>
                       <td className="px-4 py-2 text-ink-muted">{item.books.author ?? "—"}</td>
+                      <td className="px-4 py-2 text-ink-muted">{item.books.publisher ?? "—"}</td>
                       <td className="px-4 py-2 text-ink-muted">{BOOK_FORMAT_LABEL[item.books.format]}</td>
                       <td className="px-4 py-2 text-right tabular-nums text-ink">{formatIDR(item.price_idr)}</td>
                       <td className="whitespace-nowrap px-4 py-2 text-right tabular-nums text-ink">
@@ -567,7 +578,7 @@ export default function AdminBooksPage() {
                 )}
                 {shown.length === 0 && (
                   <tr>
-                    <td colSpan={9} className="px-4 py-6 text-center text-ink-faint">
+                    <td colSpan={10} className="px-4 py-6 text-center text-ink-faint">
                       {items.length === 0 ? "Belum ada buku di event ini." : `Tidak ada buku yang cocok dengan "${search}".`}
                     </td>
                   </tr>
@@ -604,6 +615,7 @@ function EditRow({
   const b = item.books;
   const [title, setTitle] = useState(b.title);
   const [author, setAuthor] = useState(b.author ?? "");
+  const [publisher, setPublisher] = useState(b.publisher ?? "");
   const [isbn, setIsbn] = useState(b.isbn ?? "");
   const [format, setFormat] = useState<BookFormat>(b.format);
   const [price, setPrice] = useState(String(item.price_idr));
@@ -625,7 +637,7 @@ function EditRow({
       item,
       // ISBN kosong harus jadi null, bukan "": index unik-nya partial (where isbn
       // is not null), jadi dua buku ber-ISBN "" akan bentrok.
-      { title: title.trim(), author: author.trim() || null, isbn: isbn.trim() || null, format },
+      { title: title.trim(), author: author.trim() || null, publisher: publisher.trim() || null, isbn: isbn.trim() || null, format },
       priceNum,
       stockNum,
     );
@@ -646,6 +658,9 @@ function EditRow({
               </Field>
               <Field label="Penulis">
                 <input value={author} onChange={(e) => setAuthor(e.target.value)} maxLength={150} className={EDIT_INPUT} />
+              </Field>
+              <Field label="Publisher">
+                <input value={publisher} onChange={(e) => setPublisher(e.target.value)} maxLength={150} className={EDIT_INPUT} />
               </Field>
               <Field label="ISBN">
                 <input

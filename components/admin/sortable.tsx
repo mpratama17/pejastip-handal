@@ -14,7 +14,7 @@ export function useSort<K extends string>(initial: SortState<K>) {
   const [sort, setSort] = useState<SortState<K>>(initial);
   const onSort = (key: K) =>
     setSort((s) => (s.key === key ? { key, dir: s.dir === "asc" ? "desc" : "asc" } : { key, dir: "asc" }));
-  return { sort, onSort };
+  return { sort, onSort, setSort };
 }
 
 /** `value` memetakan baris + kolom ke nilai banding. `null` = kosong. */

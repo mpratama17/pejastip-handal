@@ -5,7 +5,12 @@ import Link from "next/link";
 import { supabase } from "@/lib/supabase/client";
 import { StatusChip } from "@/components/status-chip";
 import { formatIDR, formatDateID } from "@/lib/format";
+import { SortTh, sortRows, useSort, type SortState } from "@/components/admin/sortable";
 import type { Database } from "@/types/database";
+
+type SortKey = "order_code" | "customer" | "event" | "payment" | "total" | "created";
+const DEFAULT_SORT: SortState<SortKey> = { key: "created", dir: "desc" };
+const PAYMENT_RANK: Record<string, number> = { not_paid: 0, partially_paid: 1, fully_paid: 2, overpaid: 3 };
 
 type EventRow = Database["public"]["Tables"]["events"]["Row"];
 type PaymentState = Database["public"]["Views"]["v_order_payment"]["Row"];
@@ -33,6 +38,19 @@ export default function AdminOrdersPage() {
   const [search, setSearch] = useState("");
   const [loading, setLoading] = useState(true);
   const [now] = useState(Date.now);
+  const { sort, onSort, setSort } = useSort<SortKey>(DEFAULT_SORT);
+
+  const isFiltered =
+    search !== "" || eventFilter !== "" || paymentFilter !== "" || statusFilter !== "" ||
+    sort.key !== DEFAULT_SORT.key || sort.dir !== DEFAULT_SORT.dir;
+
+  function resetFilters() {
+    setSearch("");
+    setEventFilter("");
+    setPaymentFilter("");
+    setStatusFilter("");
+    setSort(DEFAULT_SORT);
+  }
 
   useEffect(() => {
     async function load() {
@@ -71,7 +89,7 @@ export default function AdminOrdersPage() {
   const jumlahBatal = orders.filter((o) => o.status === "cancelled").length;
 
   const filtered = useMemo(() => {
-    return orders.filter((o) => {
+    const rows = orders.filter((o) => {
       // Order batal disembunyikan dari daftar sehari-hari, TIDAK dihapus: masih
       // dibutuhkan kalau customer protes belakangan. Filter "Batal" yang
       // memunculkannya kembali.
@@ -89,7 +107,17 @@ export default function AdminOrdersPage() {
       }
       return true;
     });
-  }, [orders, eventFilter, paymentFilter, statusFilter, search, paymentStates, isMangkrak]);
+    return sortRows(rows, sort, (o, key) => {
+      switch (key) {
+        case "order_code": return o.order_code;
+        case "customer": return o.customers?.full_name ?? null;
+        case "event": return o.events?.name ?? null;
+        case "payment": return PAYMENT_RANK[paymentStates[o.id]?.payment_state ?? "not_paid"] ?? null;
+        case "total": return o.total_idr;
+        case "created": return o.created_at;
+      }
+    });
+  }, [orders, eventFilter, paymentFilter, statusFilter, search, paymentStates, isMangkrak, sort]);
 
   return (
     <div>
@@ -139,18 +167,23 @@ export default function AdminOrdersPage() {
           <option value="">Order aktif</option>
           <option value="cancelled">Batal{jumlahBatal > 0 ? ` (${jumlahBatal})` : ""}</option>
         </select>
+        {isFiltered && (
+          <button type="button" onClick={resetFilters} className="btn btn-secondary press px-3 py-2 text-sm">
+            Reset filter
+          </button>
+        )}
       </div>
 
       <div className="mt-4 overflow-x-auto rounded-lg border border-border">
         <table className="w-full text-sm">
           <thead className="border-b border-ink bg-surface-sunken text-left">
             <tr>
-              <th className="px-4 py-2 font-medium">Kode</th>
-              <th className="px-4 py-2 font-medium">Customer</th>
-              <th className="px-4 py-2 font-medium">Event</th>
-              <th className="px-4 py-2 font-medium">Status Bayar</th>
-              <th className="px-4 py-2 text-right font-medium">Total</th>
-              <th className="px-4 py-2 font-medium">Dibuat</th>
+              <SortTh label="Kode" sortKey="order_code" sort={sort} onSort={onSort} />
+              <SortTh label="Customer" sortKey="customer" sort={sort} onSort={onSort} />
+              <SortTh label="Event" sortKey="event" sort={sort} onSort={onSort} />
+              <SortTh label="Status Bayar" sortKey="payment" sort={sort} onSort={onSort} />
+              <SortTh label="Total" sortKey="total" sort={sort} onSort={onSort} align="right" />
+              <SortTh label="Dibuat" sortKey="created" sort={sort} onSort={onSort} />
             </tr>
           </thead>
           <tbody>

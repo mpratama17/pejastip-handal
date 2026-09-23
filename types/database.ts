@@ -117,6 +117,7 @@ export type Database = {
           id: string
           isbn: string | null
           notes: string | null
+          publisher: string | null
           title: string
         }
         Insert: {
@@ -127,6 +128,7 @@ export type Database = {
           id?: string
           isbn?: string | null
           notes?: string | null
+          publisher?: string | null
           title: string
         }
         Update: {
@@ -137,6 +139,7 @@ export type Database = {
           id?: string
           isbn?: string | null
           notes?: string | null
+          publisher?: string | null
           title?: string
         }
         Relationships: []
@@ -764,6 +767,7 @@ export type Database = {
           format: Database["public"]["Enums"]["book_format"]
           isbn: string
           price_idr: number
+          publisher: string
           stock_left: number
           title: string
         }[]
