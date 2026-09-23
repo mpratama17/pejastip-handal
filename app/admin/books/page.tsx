@@ -394,7 +394,7 @@ export default function AdminBooksPage() {
                 className="rounded-sm border border-border px-3 py-2 text-sm"
               />
               <input
-                placeholder="Publisher (mis. Penguin US)"
+                placeholder="Publisher"
                 value={manual.publisher}
                 onChange={(e) => setManual({ ...manual, publisher: e.target.value })}
                 className="rounded-sm border border-border px-3 py-2 text-sm"
@@ -431,7 +431,7 @@ export default function AdminBooksPage() {
 
             <div className="mt-3 flex flex-wrap items-center gap-3 border-t border-line pt-3">
               <span className="text-xs font-semibold text-ink">Sampul</span>
-              <label className="cursor-pointer text-xs font-semibold text-link hover:underline">
+              <label className="press cursor-pointer rounded-full border border-ink bg-primary px-3 py-1.5 text-sm font-bold text-ink focus-within:ring-2 focus-within:ring-link">
                 {coverFile ? "Ganti file" : "Pilih file"}
                 <input
                   type="file"
