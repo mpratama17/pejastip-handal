@@ -71,7 +71,7 @@ function Catalogue() {
     const q = search.trim().toLowerCase();
     if (!rows || !q) return rows ?? [];
     return rows.filter((r) =>
-      [r.title, r.author, r.isbn].some((v) => v?.toLowerCase().includes(q)),
+      [r.title, r.author, r.publisher, r.isbn].some((v) => v?.toLowerCase().includes(q)),
     );
   }, [rows, search]);
 
@@ -157,6 +157,7 @@ function Catalogue() {
                     <th className="py-2.5 pl-3 pr-4 font-semibold">ISBN</th>
                     <th className="py-2.5 pr-4 font-semibold">Judul</th>
                     <th className="py-2.5 pr-4 font-semibold">Penulis</th>
+                    <th className="py-2.5 pr-4 font-semibold">Publisher</th>
                     <th className="py-2.5 pr-4 font-semibold">Format</th>
                     <th className="py-2.5 pr-4 text-right font-semibold">Stok</th>
                     <th className="py-2.5 pr-3 text-right font-semibold">Harga</th>
@@ -175,6 +176,7 @@ function Catalogue() {
                         </span>
                       </td>
                       <td className="py-2.5 pr-4 text-ink-muted">{r.author ?? "—"}</td>
+                      <td className="py-2.5 pr-4 text-ink-muted">{r.publisher ?? "—"}</td>
                       <td className="py-2.5 pr-4 text-ink-muted">{BOOK_FORMAT_LABEL[r.format]}</td>
                       <td className="py-2.5 pr-4 text-right">
                         <StockLabel left={r.stock_left} />
@@ -196,7 +198,7 @@ function Catalogue() {
                   <div className="min-w-0 flex-1">
                     <p className="font-bold leading-snug">{r.title}</p>
                     <p className="text-xs text-ink-muted">
-                      {[r.author, BOOK_FORMAT_LABEL[r.format]].filter(Boolean).join(" · ")}
+                      {[r.author, r.publisher, BOOK_FORMAT_LABEL[r.format]].filter(Boolean).join(" · ")}
                     </p>
                     {r.isbn && <p className="text-xs tabular-nums text-ink-faint">{r.isbn}</p>}
                     <div className="mt-1.5 flex items-center justify-between">

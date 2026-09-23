@@ -88,7 +88,7 @@ function OrderForm() {
   const q = search.trim().toLowerCase();
   const matches = useMemo(() => {
     if (!catalogue || !q) return [];
-    return catalogue.filter((r) => [r.title, r.author, r.isbn].some((v) => v?.toLowerCase().includes(q)));
+    return catalogue.filter((r) => [r.title, r.author, r.publisher, r.isbn].some((v) => v?.toLowerCase().includes(q)));
   }, [catalogue, q]);
 
   const cartLines = (catalogue ?? [])
@@ -421,7 +421,7 @@ function BookLine({
       </div>
       <div className="min-w-0 flex-1">
         <p className="text-sm font-bold leading-snug">{row.title}</p>
-        <p className="text-xs text-ink-muted">{[row.author, BOOK_FORMAT_LABEL[row.format]].filter(Boolean).join(" · ")}</p>
+        <p className="text-xs text-ink-muted">{[row.author, row.publisher, BOOK_FORMAT_LABEL[row.format]].filter(Boolean).join(" · ")}</p>
         <p className="mt-1 flex flex-wrap items-center gap-2 text-sm font-bold tabular-nums text-accent-ink">
           {formatIDR(row.price_idr)}
           {qty > 0 && <span className="text-ink-muted">× {qty} = {formatIDR(row.price_idr * qty)}</span>}
