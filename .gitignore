@@ -51,6 +51,7 @@ client_secret*.json
 
 # dokumen internal (brief, PRD, instruksi & output AI) — hanya lokal, tidak di repo publik
 *.md
+!/README.md
 .claude/
 Claude outputs/
 
