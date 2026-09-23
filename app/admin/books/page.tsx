@@ -324,7 +324,7 @@ export default function AdminBooksPage() {
                 if (file) handleCSVFile(file);
                 e.target.value = "";
               }}
-              className="mt-3 text-sm"
+              className="mt-3 block w-full cursor-pointer rounded-md border border-dashed border-ink bg-surface p-3 text-sm file:mr-3 file:cursor-pointer file:rounded-full file:border file:border-ink file:border-solid file:bg-primary file:px-3 file:py-1.5 file:text-sm file:font-bold file:text-ink disabled:opacity-50"
             />
             {importing && <p className="mt-2 text-sm text-ink-muted">Mengimpor…</p>}
             {importError && (
@@ -372,7 +372,7 @@ export default function AdminBooksPage() {
             <h2 className="text-sm font-semibold text-ink">Tambah buku manual</h2>
             <div className="mt-3 grid gap-3 sm:grid-cols-3">
               <input
-                placeholder="ISBN (opsional)"
+                placeholder="ISBN"
                 value={manual.isbn}
                 onChange={(e) => setManual({ ...manual, isbn: e.target.value })}
                 className="rounded-sm border border-border px-3 py-2 text-sm"
@@ -421,7 +421,7 @@ export default function AdminBooksPage() {
             </div>
 
             <div className="mt-3 flex flex-wrap items-center gap-3 border-t border-line pt-3">
-              <span className="text-xs font-semibold text-ink">Sampul (opsional)</span>
+              <span className="text-xs font-semibold text-ink">Sampul</span>
               <label className="cursor-pointer text-xs font-semibold text-link hover:underline">
                 {coverFile ? "Ganti file" : "Pilih file"}
                 <input
