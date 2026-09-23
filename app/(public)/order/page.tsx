@@ -266,7 +266,11 @@ function OrderForm() {
                         key={r.event_item_id}
                         row={r}
                         qty={cart[r.event_item_id] ?? 0}
-                        onQty={(v) => setQty(r.event_item_id, v)}
+                        onQty={(v) => {
+                          setQty(r.event_item_id, v);
+                          // Buku yang baru ditambah cukup tampil di "Buku dipilih", tidak dobel di hasil cari.
+                          setSearch("");
+                        }}
                       />
                     ))}
                   </ul>
