@@ -57,7 +57,13 @@ function Tracker() {
       setError(error.code === "P0001" ? error.message : "Gagal memuat. Periksa koneksi lalu coba lagi.");
       return;
     }
-    setOrders(data ?? []);
+    // Kode salah = hasil kosong (bukan error), supaya tebakan salah ikut terhitung rate limit.
+    if (!data || data.length === 0) {
+      setOrders(null);
+      setError("Kode tidak ditemukan. Periksa kembali atau hubungi admin.");
+      return;
+    }
+    setOrders(data);
   }, []);
 
   // Kode di URL = sumber kebenaran → bisa dibagikan/di-bookmark.
