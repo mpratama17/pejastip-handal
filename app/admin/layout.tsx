@@ -32,7 +32,11 @@ export default function AdminLayout({ children }: { children: React.ReactNode })
 
   useEffect(() => {
     if (session === null && !isLoginPage) {
-      router.replace("/admin/login");
+      // Login Google yang gagal kembali ke /admin dengan error_description di
+      // query/hash. Diteruskan ke halaman login; kalau tidak, gagalnya diam-diam.
+      const params = new URLSearchParams(`${window.location.search.slice(1)}&${window.location.hash.slice(1)}`);
+      const oauthError = params.get("error_description");
+      router.replace(oauthError ? `/admin/login?error=${encodeURIComponent(oauthError)}` : "/admin/login");
     }
   }, [session, isLoginPage, router]);
 

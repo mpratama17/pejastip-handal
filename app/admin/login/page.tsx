@@ -1,37 +1,31 @@
 "use client";
 
 import { useEffect, useState } from "react";
-import { useRouter } from "next/navigation";
 import { supabase } from "@/lib/supabase/client";
 import { NOT_ADMIN_FLAG } from "@/lib/admin/use-admin-session";
 
 export default function AdminLoginPage() {
-  const router = useRouter();
-  const [email, setEmail] = useState("");
-  const [password, setPassword] = useState("");
   const [error, setError] = useState<string | null>(null);
-  const [loading, setLoading] = useState(false);
   const [googleLoading, setGoogleLoading] = useState(false);
 
   useEffect(() => {
-    if (sessionStorage.getItem(NOT_ADMIN_FLAG)) {
+    const rejected = sessionStorage.getItem(NOT_ADMIN_FLAG);
+    if (rejected !== null) {
       sessionStorage.removeItem(NOT_ADMIN_FLAG);
-      setError("Akun ini tidak punya akses admin.");
-    }
-  }, []);
-
-  async function handleSubmit(e: React.FormEvent) {
-    e.preventDefault();
-    setLoading(true);
-    setError(null);
-    const { error } = await supabase.auth.signInWithPassword({ email, password });
-    setLoading(false);
-    if (error) {
-      setError("Email atau password salah.");
+      setError(
+        `Akun ${rejected || "ini"} belum terdaftar sebagai admin. Minta pemilik toko menambahkan email ini, lalu coba lagi.`,
+      );
       return;
     }
-    router.push("/admin");
-  }
+    const oauthError = new URLSearchParams(window.location.search).get("error");
+    if (oauthError) {
+      setError(
+        /signup/i.test(oauthError)
+          ? "Akun Google ini belum terdaftar. Minta pemilik toko menambahkan email ini, lalu coba lagi."
+          : `Login Google gagal: ${oauthError}`,
+      );
+    }
+  }, []);
 
   async function handleGoogleLogin() {
     setGoogleLoading(true);
@@ -64,49 +58,7 @@ export default function AdminLoginPage() {
           {googleLoading ? "Mengarahkan ke Google…" : "Masuk dengan Google"}
         </button>
 
-        <div className="mt-5 flex items-center gap-3 text-xs text-ink-faint">
-          <span className="h-px flex-1 bg-border" />
-          atau pakai email
-          <span className="h-px flex-1 bg-border" />
-        </div>
-
-        <form onSubmit={handleSubmit}>
-        <label className="mt-4 block text-sm font-medium text-ink" htmlFor="email">
-          Email
-        </label>
-        <input
-          id="email"
-          type="email"
-          required
-          autoComplete="username"
-          value={email}
-          onChange={(e) => setEmail(e.target.value)}
-          className="mt-1 w-full rounded-sm border border-border bg-surface px-3 py-2 text-sm text-ink"
-        />
-
-        <label className="mt-4 block text-sm font-medium text-ink" htmlFor="password">
-          Password
-        </label>
-        <input
-          id="password"
-          type="password"
-          required
-          autoComplete="current-password"
-          value={password}
-          onChange={(e) => setPassword(e.target.value)}
-          className="mt-1 w-full rounded-sm border border-border bg-surface px-3 py-2 text-sm text-ink"
-        />
-
-        {error && <p className="mt-3 text-sm text-danger">{error}</p>}
-
-        <button
-          type="submit"
-          disabled={loading}
-          className="btn btn-primary press mt-6 w-full px-4 py-2.5 text-sm font-semibold disabled:opacity-60"
-        >
-          {loading ? "Masuk…" : "Masuk"}
-        </button>
-        </form>
+        {error && <p className="mt-4 text-sm text-danger">{error}</p>}
       </div>
     </div>
   );
