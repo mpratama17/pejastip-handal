@@ -6,9 +6,17 @@ import { useSearchParams } from "next/navigation";
 import { supabase } from "@/lib/supabase/client";
 import { formatIDR } from "@/lib/format";
 import { useSiteSettings } from "@/lib/site-settings";
-import type { Database } from "@/types/database";
-
-type ShippableItem = Database["public"]["Functions"]["get_shippable_items"]["Returns"][number];
+// get_shippable_items mengembalikan jsonb {matched, items}: kode/WA salah = matched false,
+// bukan error, supaya tebakan salah ikut terhitung rate limit.
+type ShippableItem = {
+  order_item_id: string;
+  order_code: string;
+  title: string;
+  qty: number;
+  eligible: boolean; // false = sudah tiba tapi order belum lunas
+  balance_idr: number;
+};
+type ShippableLookup = { matched: boolean; items: ShippableItem[] };
 
 const PROVINCES = [
   "Aceh", "Sumatera Utara", "Sumatera Barat", "Riau", "Kepulauan Riau", "Jambi", "Bengkulu", "Sumatera Selatan",
@@ -64,7 +72,9 @@ function ShippingForm() {
     const { data, error } = await supabase.rpc("get_shippable_items", { p_code: code, p_whatsapp: whatsapp });
     setChecking(false);
     if (error) return setLookupError(error.code === "P0001" ? error.message : "Gagal memeriksa. Coba lagi.");
-    const list = data ?? [];
+    const res = data as unknown as ShippableLookup | null;
+    if (!res?.matched) return setLookupError("Kode dan nomor WhatsApp tidak cocok.");
+    const list = res.items;
     setItems(list);
     setSelected(new Set(list.filter((i) => i.eligible).map((i) => i.order_item_id)));
   }
@@ -85,7 +95,7 @@ function ShippingForm() {
     if (!confirmed) return setSubmitError("Centang konfirmasi alamat dulu.");
     setSubmitting(true);
     setSubmitError(null);
-    const { error } = await supabase.rpc("create_shipment", {
+    const { data: shipmentId, error } = await supabase.rpc("create_shipment", {
       p_code: code,
       p_whatsapp: whatsapp,
       p_order_item_ids: [...selected],
@@ -100,6 +110,7 @@ function ShippingForm() {
     });
     setSubmitting(false);
     if (error) return setSubmitError(error.code === "P0001" ? error.message : "Gagal mengirim. Coba lagi.");
+    if (!shipmentId) return setSubmitError("Kode dan nomor WhatsApp tidak cocok.");
     setDone(eligible.filter((i) => selected.has(i.order_item_id)).map((i) => i.title));
     window.scrollTo({ top: 0 });
   }

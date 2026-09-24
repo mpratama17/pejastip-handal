@@ -67,10 +67,16 @@ export function PaymentProofUpload({
       .upload(path, toSend, { contentType: toSend.type });
     if (uploadError) {
       setStatus("idle");
-      return setError("Upload gagal. Periksa koneksi lalu coba lagi.");
+      // Ditolak policy storage: order batal, atau sudah 10 file bukti di order ini.
+      const denied = "statusCode" in uploadError && String(uploadError.statusCode) === "403";
+      return setError(
+        denied
+          ? "Upload ditolak: batas upload bukti untuk order ini sudah tercapai atau order sudah dibatalkan. Hubungi admin."
+          : "Upload gagal. Periksa koneksi lalu coba lagi.",
+      );
     }
 
-    const { error: rpcError } = await supabase.rpc("submit_payment_proof", {
+    const { data: saved, error: rpcError } = await supabase.rpc("submit_payment_proof", {
       p_customer_code: customerCode,
       p_order_code: orderCode,
       p_amount_idr: nominal,
@@ -81,6 +87,10 @@ export function PaymentProofUpload({
     if (rpcError) {
       setStatus("idle");
       return setError(rpcError.message);
+    }
+    if (!saved || saved.length === 0) {
+      setStatus("idle");
+      return setError("Order tidak ditemukan. Periksa kode lalu coba lagi.");
     }
     setStatus("done");
     setFile(null);
