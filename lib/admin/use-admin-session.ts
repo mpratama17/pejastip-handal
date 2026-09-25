@@ -26,7 +26,8 @@ export function useAdminSession() {
         return setSession(s);
       }
       if (data !== true) {
-        sessionStorage.setItem(NOT_ADMIN_FLAG, "1");
+        // Simpan emailnya: halaman login menyebut akun mana yang ditolak.
+        sessionStorage.setItem(NOT_ADMIN_FLAG, s.user.email ?? "");
         await supabase.auth.signOut();
         return setSession(null);
       }
