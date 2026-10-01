@@ -2,6 +2,7 @@
 
 import { useEffect, useMemo, useState } from "react";
 import { supabase } from "@/lib/supabase/client";
+import { Pagination, usePagination } from "@/components/pagination";
 import { formatIDR, formatDateID } from "@/lib/format";
 import { parseSimpleCSV } from "@/lib/csv";
 import { BOOK_FORMAT_LABEL } from "@/lib/labels";
@@ -62,6 +63,7 @@ export default function AdminBooksPage() {
       : i.books.created_at,
     );
   }, [items, search, sort, taken]);
+  const { pageRows, pagination } = usePagination(shown);
 
   const [coverFile, setCoverFile] = useState<File | null>(null);
   const [savingManual, setSavingManual] = useState(false);
@@ -513,7 +515,7 @@ export default function AdminBooksPage() {
                 </tr>
               </thead>
               <tbody>
-                {shown.map((item) =>
+                {pageRows.map((item) =>
                   editing === item.id ? (
                     <EditRow key={item.id} item={item} colSpan={10} onSave={saveRow} onCancel={() => setEditing(null)} />
                   ) : (
@@ -586,6 +588,7 @@ export default function AdminBooksPage() {
               </tbody>
             </table>
           </div>
+          <Pagination {...pagination} unit="buku" />
           {rowError && (
             <p role="alert" className="mt-2 text-sm text-danger">
               {rowError}
