@@ -2,6 +2,7 @@
 
 import { useCallback, useEffect, useState } from "react";
 import { supabase } from "@/lib/supabase/client";
+import { Pagination, usePagination } from "@/components/pagination";
 import { formatIDR, formatDateID } from "@/lib/format";
 import type { Database } from "@/types/database";
 
@@ -44,6 +45,8 @@ export default function AdminShipmentsPage() {
     load();
   }, [load]);
 
+  const { pageRows, pagination } = usePagination(rows ?? []);
+
   return (
     <div>
       <h1 className="font-display text-xl font-bold text-ink">Pengiriman</h1>
@@ -67,11 +70,14 @@ export default function AdminShipmentsPage() {
           Tidak ada pengiriman di tab ini.
         </p>
       ) : (
-        <div className="mt-6 grid gap-4 lg:grid-cols-2">
-          {rows.map((s) => (
-            <ShipmentCard key={s.id} shipment={s} onSaved={load} />
-          ))}
-        </div>
+        <>
+          <div className="mt-6 grid gap-4 lg:grid-cols-2">
+            {pageRows.map((s) => (
+              <ShipmentCard key={s.id} shipment={s} onSaved={load} />
+            ))}
+          </div>
+          <Pagination {...pagination} unit="pengiriman" />
+        </>
       )}
     </div>
   );

@@ -3,6 +3,7 @@
 import { useCallback, useEffect, useMemo, useState } from "react";
 import Link from "next/link";
 import { supabase } from "@/lib/supabase/client";
+import { Pagination, usePagination } from "@/components/pagination";
 import { StatusChip } from "@/components/status-chip";
 import { formatIDR, formatDateID } from "@/lib/format";
 import { SortTh, sortRows, useSort, type SortState } from "@/components/admin/sortable";
@@ -118,6 +119,7 @@ export default function AdminOrdersPage() {
       }
     });
   }, [orders, eventFilter, paymentFilter, statusFilter, search, paymentStates, isMangkrak, sort]);
+  const { pageRows, pagination } = usePagination(filtered);
 
   return (
     <div>
@@ -187,7 +189,7 @@ export default function AdminOrdersPage() {
             </tr>
           </thead>
           <tbody>
-            {filtered.map((o) => {
+            {pageRows.map((o) => {
               const ps = paymentStates[o.id];
               return (
                 <tr key={o.id} className="border-t-1 border-line">
@@ -229,6 +231,7 @@ export default function AdminOrdersPage() {
           </tbody>
         </table>
       </div>
+      <Pagination {...pagination} unit="order" />
     </div>
   );
 }

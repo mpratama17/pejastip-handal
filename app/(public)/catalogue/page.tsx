@@ -9,12 +9,12 @@ import { BOOK_FORMAT_LABEL, isAcceptingOrders } from "@/lib/labels";
 import { StatusChip } from "@/components/status-chip";
 import { TypeChip } from "@/components/type-chip";
 import { BookCover } from "@/components/public/book-cover";
+import { Pagination, usePagination } from "@/components/pagination";
 import type { Database } from "@/types/database";
 
 type EventRow = Database["public"]["Tables"]["events"]["Row"];
 type CatalogueRow = Database["public"]["Functions"]["get_catalogue"]["Returns"][number];
 
-const PAGE_SIZE = 20;
 const CATALOGUE_STATUSES = ["open", "closed", "ordered", "shipped_to_indo", "arrived"] as const;
 
 export default function CataloguePage() {
@@ -31,7 +31,6 @@ function Catalogue() {
   const [events, setEvents] = useState<EventRow[] | null>(null);
   const [rows, setRows] = useState<CatalogueRow[] | null>(null);
   const [search, setSearch] = useState("");
-  const [page, setPage] = useState(1);
   const [now] = useState(Date.now);
   const [loadError, setLoadError] = useState(false);
 
@@ -56,7 +55,6 @@ function Catalogue() {
     if (!eventId) return;
     let stale = false;
     setRows(null);
-    setPage(1);
     supabase.rpc("get_catalogue", { p_event_id: eventId }).then(({ data, error }) => {
       if (stale) return;
       if (error) return setLoadError(true);
@@ -75,8 +73,7 @@ function Catalogue() {
     );
   }, [rows, search]);
 
-  const pageCount = Math.max(1, Math.ceil(filtered.length / PAGE_SIZE));
-  const pageRows = filtered.slice((page - 1) * PAGE_SIZE, page * PAGE_SIZE);
+  const { pageRows, pagination } = usePagination(filtered);
 
   return (
     <div className="mx-auto max-w-5xl px-4 py-10">
@@ -121,7 +118,7 @@ function Catalogue() {
               value={search}
               onChange={(e) => {
                 setSearch(e.target.value);
-                setPage(1);
+                pagination.setPage(1);
               }}
               placeholder="Cari judul, penulis, atau ISBN"
               className="w-full rounded-full border border-border py-2.5 pl-10 pr-4 text-sm"
@@ -210,29 +207,7 @@ function Catalogue() {
               ))}
             </ul>
 
-            <div className="mt-5 flex items-center justify-between text-sm text-ink-muted">
-              <span>
-                {(page - 1) * PAGE_SIZE + 1}–{Math.min(page * PAGE_SIZE, filtered.length)} dari {filtered.length} buku
-              </span>
-              {pageCount > 1 && (
-                <div className="flex gap-2">
-                  <button
-                    onClick={() => setPage((p) => p - 1)}
-                    disabled={page === 1}
-                    className="btn btn-secondary press px-4 py-1.5"
-                  >
-                    Sebelumnya
-                  </button>
-                  <button
-                    onClick={() => setPage((p) => p + 1)}
-                    disabled={page === pageCount}
-                    className="btn btn-secondary press px-4 py-1.5"
-                  >
-                    Berikutnya
-                  </button>
-                </div>
-              )}
-            </div>
+            <Pagination {...pagination} unit="buku" />
           </>
         )}
       </div>

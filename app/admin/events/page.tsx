@@ -3,6 +3,7 @@
 import { useEffect, useState } from "react";
 import Link from "next/link";
 import { supabase } from "@/lib/supabase/client";
+import { Pagination, usePagination } from "@/components/pagination";
 import { useConfirm } from "@/components/admin/confirm-dialog";
 import { EVENT_STATUS_MAP } from "@/components/status-chip";
 import { EVENT_TYPE_LABEL, isBeforeOpen, isPastClose } from "@/lib/labels";
@@ -137,6 +138,8 @@ export default function AdminEventsPage() {
     closes_at: "",
   };
 
+  const { pageRows, pagination } = usePagination(events ?? []);
+
   return (
     <div>
       <div className="flex items-center justify-between">
@@ -185,7 +188,7 @@ export default function AdminEventsPage() {
             </tr>
           </thead>
           <tbody>
-            {events?.map((ev) =>
+            {pageRows.map((ev) =>
               editing === ev.id ? (
                 <tr key={ev.id} className="border-t-1 border-line">
                   <td colSpan={6} className="p-0">
@@ -264,6 +267,7 @@ export default function AdminEventsPage() {
           </tbody>
         </table>
       </div>
+      <Pagination {...pagination} unit="event" />
     </div>
   );
 }

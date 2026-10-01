@@ -2,6 +2,7 @@
 
 import { useCallback, useEffect, useState } from "react";
 import { supabase } from "@/lib/supabase/client";
+import { Pagination, usePagination } from "@/components/pagination";
 import { formatDateID } from "@/lib/format";
 import { BOOK_FORMAT_LABEL } from "@/lib/labels";
 import { waLink } from "@/lib/site-settings";
@@ -39,6 +40,8 @@ export default function AdminRequestsPage() {
     if (error) load();
   }
 
+  const { pageRows, pagination } = usePagination(rows ?? []);
+
   return (
     <div>
       <div className="flex flex-wrap items-center justify-between gap-3">
@@ -61,7 +64,7 @@ export default function AdminRequestsPage() {
             </tr>
           </thead>
           <tbody>
-            {rows?.map((r) => {
+            {pageRows.map((r) => {
               const st = STATUS.find((s) => s.value === r.status)!;
               return (
                 <tr key={r.id} className="border-t-1 border-line bg-surface align-top">
@@ -111,6 +114,7 @@ export default function AdminRequestsPage() {
           </tbody>
         </table>
       </div>
+      <Pagination {...pagination} unit="request" />
     </div>
   );
 }

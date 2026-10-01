@@ -3,6 +3,7 @@
 import { useCallback, useEffect, useState } from "react";
 import Link from "next/link";
 import { supabase } from "@/lib/supabase/client";
+import { Pagination, usePagination } from "@/components/pagination";
 import { formatIDR, formatDateID } from "@/lib/format";
 import { StatusChip } from "@/components/status-chip";
 import type { Database } from "@/types/database";
@@ -51,6 +52,8 @@ export default function AdminPaymentsPage() {
     load();
   }, [load]);
 
+  const { pageRows, pagination } = usePagination(rows ?? []);
+
   return (
     <div>
       <h1 className="font-display text-xl font-bold text-ink">Verifikasi pembayaran</h1>
@@ -74,11 +77,14 @@ export default function AdminPaymentsPage() {
           {filter === "pending" ? "Tidak ada bukti transfer yang menunggu." : "Belum ada riwayat verifikasi."}
         </p>
       ) : (
-        <div className="mt-6 flex flex-col gap-4">
-          {rows.map((p) => (
-            <PaymentCard key={p.id} payment={p} balance={balances[p.order_id]} onReviewed={load} />
-          ))}
-        </div>
+        <>
+          <div className="mt-6 flex flex-col gap-4">
+            {pageRows.map((p) => (
+              <PaymentCard key={p.id} payment={p} balance={balances[p.order_id]} onReviewed={load} />
+            ))}
+          </div>
+          <Pagination {...pagination} unit="bukti transfer" />
+        </>
       )}
     </div>
   );

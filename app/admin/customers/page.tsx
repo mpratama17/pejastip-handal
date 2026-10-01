@@ -4,6 +4,7 @@ import { Suspense, useCallback, useEffect, useMemo, useState } from "react";
 import Link from "next/link";
 import { useRouter, useSearchParams } from "next/navigation";
 import { supabase } from "@/lib/supabase/client";
+import { Pagination, usePagination } from "@/components/pagination";
 import { useConfirm } from "@/components/admin/confirm-dialog";
 import { formatIDR, formatDateID } from "@/lib/format";
 import { StatusChip } from "@/components/status-chip";
@@ -60,6 +61,7 @@ function Customers() {
   }, [customers, balances, search, onlyDebt, sort]);
 
   const selected = customers?.find((c) => c.id === selectedId);
+  const { pageRows, pagination } = usePagination(filtered);
 
   return (
     <div>
@@ -92,7 +94,7 @@ function Customers() {
                 </tr>
               </thead>
               <tbody>
-                {filtered.map((c) => {
+                {pageRows.map((c) => {
                   const bal = balances[c.id]?.total_balance_idr ?? 0;
                   return (
                     <tr
@@ -124,6 +126,7 @@ function Customers() {
               </tbody>
             </table>
           </div>
+          <Pagination {...pagination} unit="customer" />
         </div>
 
         {selected ? (
