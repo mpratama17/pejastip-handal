@@ -10,6 +10,7 @@ import { StatusChip } from "@/components/status-chip";
 import { TypeChip } from "@/components/type-chip";
 import { BookCover } from "@/components/public/book-cover";
 import { Pagination, usePagination } from "@/components/pagination";
+import { loadPicks, savePicks, type Picks } from "@/lib/picks";
 import type { Database } from "@/types/database";
 
 type EventRow = Database["public"]["Tables"]["events"]["Row"];
@@ -50,11 +51,23 @@ function Catalogue() {
 
   const eventId = params.get("event") ?? events?.[0]?.id ?? "";
   const event = events?.find((e) => e.id === eventId);
+  const accepting = !!event && isAcceptingOrders(event, now);
+  const [picks, setPicks] = useState<Picks>({});
+  const pickedCount = Object.values(picks).reduce((a, q) => a + q, 0);
+
+  function togglePick(itemId: string) {
+    const next = { ...picks };
+    if (next[itemId]) delete next[itemId];
+    else next[itemId] = 1;
+    setPicks(next);
+    savePicks(eventId, next);
+  }
 
   useEffect(() => {
     if (!eventId) return;
     let stale = false;
     setRows(null);
+    setPicks(loadPicks(eventId));
     supabase.rpc("get_catalogue", { p_event_id: eventId }).then(({ data, error }) => {
       if (stale) return;
       if (error) return setLoadError(true);
@@ -124,7 +137,7 @@ function Catalogue() {
               className="w-full rounded-full border border-border py-2.5 pl-10 pr-4 text-sm"
             />
           </label>
-          {event && isAcceptingOrders(event, now) && (
+          {accepting && (
             <Link
               href={`/order?event=${event.id}`}
               className="btn btn-primary press px-4 py-2.5 text-center text-sm font-semibold"
@@ -158,6 +171,7 @@ function Catalogue() {
                     <th className="py-2.5 pr-4 font-semibold">Format</th>
                     <th className="py-2.5 pr-4 text-right font-semibold">Stok</th>
                     <th className="py-2.5 pr-3 text-right font-semibold">Harga</th>
+                    {accepting && <th className="py-2.5 pr-3"><span className="sr-only">Pesan</span></th>}
                   </tr>
                 </thead>
                 <tbody>
@@ -179,6 +193,11 @@ function Catalogue() {
                         <StockLabel left={r.stock_left} />
                       </td>
                       <td className="py-2.5 pr-3 text-right font-bold tabular-nums text-accent-ink">{formatIDR(r.price_idr)}</td>
+                      {accepting && (
+                        <td className="py-2.5 pr-3 text-right">
+                          <PickButton row={r} picked={!!picks[r.event_item_id]} onToggle={togglePick} />
+                        </td>
+                      )}
                     </tr>
                   ))}
                 </tbody>
@@ -202,6 +221,11 @@ function Catalogue() {
                       <span className="font-bold tabular-nums text-accent-ink">{formatIDR(r.price_idr)}</span>
                       <StockLabel left={r.stock_left} />
                     </div>
+                    {accepting && (
+                      <div className="mt-2 flex justify-end">
+                        <PickButton row={r} picked={!!picks[r.event_item_id]} onToggle={togglePick} />
+                      </div>
+                    )}
                   </div>
                 </li>
               ))}
@@ -212,6 +236,19 @@ function Catalogue() {
         )}
       </div>
 
+      {accepting && pickedCount > 0 && (
+        <div className="sticky bottom-4 z-10 mt-6">
+          <Link
+            href={`/order?event=${eventId}`}
+            className="btn btn-primary press flex items-center justify-center gap-2 px-5 py-3 text-sm font-semibold shadow-lg"
+          >
+            <span className="tabular-nums">{pickedCount} buku dipilih</span>
+            <span aria-hidden="true">·</span>
+            Lanjut ke form order →
+          </Link>
+        </div>
+      )}
+
       <p className="mt-6 text-center text-sm text-ink-muted">
         Tidak menemukan buku yang kamu cari?{" "}
         <Link href="/request" className="font-medium text-link hover:underline">
@@ -219,6 +256,21 @@ function Catalogue() {
         </Link>
       </p>
     </div>
+  );
+}
+
+function PickButton({ row, picked, onToggle }: { row: CatalogueRow; picked: boolean; onToggle: (id: string) => void }) {
+  if (row.stock_left === 0 && !picked) return null;
+  return (
+    <button
+      type="button"
+      onClick={() => onToggle(row.event_item_id)}
+      aria-pressed={picked}
+      aria-label={`${picked ? "Batal pesan" : "Pesan"} ${row.title}`}
+      className={`btn press whitespace-nowrap px-3 py-1.5 text-sm font-semibold ${picked ? "btn-primary" : "btn-secondary"}`}
+    >
+      {picked ? "✓ Dipilih" : "+ Pesan"}
+    </button>
   );
 }
 
