@@ -9,6 +9,7 @@ import { BOOK_FORMAT_LABEL, isAcceptingOrders } from "@/lib/labels";
 import { TypeChip } from "@/components/type-chip";
 import { waLink, type BankAccount } from "@/lib/site-settings";
 import { BookCover } from "@/components/public/book-cover";
+import { loadPicks, savePicks } from "@/lib/picks";
 import { DaisySticker, StarSticker } from "@/components/public/stickers";
 import { PaymentProofUpload } from "@/components/public/payment-proof-upload";
 import type { Database } from "@/types/database";
@@ -64,8 +65,10 @@ function OrderForm() {
       const withItems = new Set((items.data ?? []).map((i) => i.event_id));
       const list = (ev.data ?? []).filter((e) => withItems.has(e.id) && isAcceptingOrders(e, now));
       setEvents(list);
-      if (presetEvent && list.some((e) => e.id === presetEvent)) setEventId(presetEvent);
-      else if (list.length === 1) setEventId(list[0].id);
+      const id = presetEvent && list.some((e) => e.id === presetEvent) ? presetEvent : list.length === 1 ? list[0].id : "";
+      if (!id) return;
+      setCart(loadPicks(id)); // pilihan "+ Pesan" dari katalog
+      setEventId(id);
     });
   }, [presetEvent, now]);
 
@@ -78,11 +81,25 @@ function OrderForm() {
       if (stale) return;
       if (error) return setLoadError(true);
       setCatalogue(data ?? []);
+      // Pilihan dari katalog bisa basi (buku dihapus/habis/stok turun): rapikan ke stok sekarang.
+      const rows = new Map((data ?? []).map((r) => [r.event_item_id, r]));
+      setCart((c) =>
+        Object.fromEntries(
+          Object.entries(c)
+            .map(([id, q]): [string, number] => [id, Math.min(q, rows.get(id)?.stock_left ?? q)])
+            .filter(([id, q]) => rows.has(id) && q > 0),
+        ),
+      );
     });
     return () => {
       stale = true;
     };
   }, [eventId]);
+
+  // Form ⇄ katalog memakai pilihan yang sama per batch.
+  useEffect(() => {
+    if (eventId) savePicks(eventId, cart);
+  }, [eventId, cart]);
 
   const selectedEvent = events?.find((e) => e.id === eventId);
   const q = search.trim().toLowerCase();
@@ -102,7 +119,7 @@ function OrderForm() {
   function chooseEvent(id: string) {
     if (id === eventId) return;
     // Satu order = satu batch; buku dari batch lain tidak boleh ikut terbawa.
-    setCart({});
+    setCart(loadPicks(id));
     setSearch("");
     setEventId(id);
   }
@@ -146,6 +163,7 @@ function OrderForm() {
     }
     const row = data?.[0];
     if (!row) return setError("Order mungkin sudah tercatat tapi konfirmasinya tidak terbaca. Tekan Kirim Order lagi, order tidak akan dobel.");
+    savePicks(eventId, {});
     setResult(row);
     window.scrollTo({ top: 0 });
   }
@@ -197,7 +215,7 @@ function OrderForm() {
           </Section>
 
           <Section n={2} title="Pilih batch">
-            <p className="text-sm text-ink-muted">Satu order untuk satu batch. Ganti batch akan mengosongkan pilihan bukumu.</p>
+            <p className="text-sm text-ink-muted">Satu order untuk satu batch. Pilihan buku tiap batch tersimpan masing-masing.</p>
             <div className="mt-3 grid gap-3 sm:grid-cols-2">
               {events === null && <p className="text-sm text-ink-muted">Memuat batch…</p>}
               {events?.length === 0 && !loadError && (
