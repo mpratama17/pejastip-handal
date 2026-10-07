@@ -4,6 +4,8 @@ import { useCallback, useEffect, useState } from "react";
 import { supabase } from "@/lib/supabase/client";
 import { Pagination, usePagination } from "@/components/pagination";
 import { formatIDR, formatDateID } from "@/lib/format";
+import { isShopeeCourier, shopeeRefund, useSiteSettings } from "@/lib/site-settings";
+import { ExportButton, fetchAll, phone, type Sheet } from "@/components/admin/export-button";
 import type { Database } from "@/types/database";
 
 type ShipmentRow = Database["public"]["Tables"]["shipments"]["Row"] & {
@@ -49,7 +51,10 @@ export default function AdminShipmentsPage() {
 
   return (
     <div>
-      <h1 className="font-display text-xl font-bold text-ink">Pengiriman</h1>
+      <div className="flex flex-wrap items-center justify-between gap-3">
+        <h1 className="font-display text-xl font-bold text-ink">Pengiriman</h1>
+        <ExportButton fileName="pengiriman" build={buildShipmentsExport} />
+      </div>
 
       <div className="mt-4 flex gap-1 rounded-md bg-surface-sunken p-1 text-sm sm:inline-flex">
         {TABS.map((t) => (
@@ -90,6 +95,9 @@ function ShipmentCard({ shipment: s, onSaved }: { shipment: ShipmentRow; onSaved
   const [busy, setBusy] = useState(false);
   const [error, setError] = useState<string | null>(null);
   const [copied, setCopied] = useState(false);
+  const settings = useSiteSettings();
+  // Via Shopee: ongkir dibayar customer di Shopee, admin tinggal mengembalikan nominal checkout.
+  const viaShopee = isShopeeCourier(s.courier);
 
   const addressText = [
     s.recipient_name,
@@ -142,6 +150,13 @@ function ShipmentCard({ shipment: s, onSaved }: { shipment: ShipmentRow; onSaved
         </button>
       </div>
 
+      {viaShopee && settings && settings.shopee_checkout.nominal_idr > 0 && (
+        <p className="mt-3 rounded-md border border-ink bg-sky-soft p-3 text-sm">
+          Checkout Shopee {formatIDR(settings.shopee_checkout.nominal_idr)}. Setelah pesanan Shopee selesai, refund{" "}
+          <b className="tabular-nums">{formatIDR(shopeeRefund(settings.shopee_checkout))}</b> ke customer (tanya rekening via WA).
+        </p>
+      )}
+
       <ul className="mt-3 flex flex-col gap-1 text-sm">
         {s.order_items.map((it) => (
           <li key={it.id} className="flex justify-between gap-2">
@@ -155,20 +170,22 @@ function ShipmentCard({ shipment: s, onSaved }: { shipment: ShipmentRow; onSaved
 
       {s.delivered_at ? (
         <p className="mt-4 border-t-1 border-line pt-3 text-sm text-ink-muted">
-          Resi <span className="font-semibold tabular-nums text-ink">{s.tracking_number}</span> · ongkir{" "}
-          {formatIDR(s.shipping_cost_idr)} · diterima {formatDateID(s.delivered_at)}
+          Resi <span className="font-semibold tabular-nums text-ink">{s.tracking_number}</span>
+          {!viaShopee && ` · ongkir ${formatIDR(s.shipping_cost_idr)}`} · diterima {formatDateID(s.delivered_at)}
         </p>
       ) : (
         <div className="mt-4 border-t-1 border-line pt-3">
-          <div className="grid grid-cols-[1fr_7rem_5rem] gap-2">
+          <div className={`grid gap-2 ${viaShopee ? "grid-cols-[1fr_5rem]" : "grid-cols-[1fr_7rem_5rem]"}`}>
             <label className="text-xs font-medium text-ink-muted">
               No. resi
               <input value={tracking} onChange={(e) => setTracking(e.target.value)} className="mt-1 w-full rounded-sm border border-border px-2 py-1.5 text-sm tabular-nums text-ink" />
             </label>
-            <label className="text-xs font-medium text-ink-muted">
-              Ongkir (Rp)
-              <input type="number" min={0} value={cost} onChange={(e) => setCost(e.target.value)} className="mt-1 w-full rounded-sm border border-border px-2 py-1.5 text-sm tabular-nums text-ink" />
-            </label>
+            {!viaShopee && (
+              <label className="text-xs font-medium text-ink-muted">
+                Ongkir (Rp)
+                <input type="number" min={0} value={cost} onChange={(e) => setCost(e.target.value)} className="mt-1 w-full rounded-sm border border-border px-2 py-1.5 text-sm tabular-nums text-ink" />
+              </label>
+            )}
             <label className="text-xs font-medium text-ink-muted">
               Layanan
               <input value={service} onChange={(e) => setService(e.target.value)} placeholder="REG" className="mt-1 w-full rounded-sm border border-border px-2 py-1.5 text-sm text-ink" />
@@ -189,4 +206,30 @@ function ShipmentCard({ shipment: s, onSaved }: { shipment: ShipmentRow; onSaved
       )}
     </article>
   );
+}
+
+// Semua pengiriman, tidak ikut tab.
+async function buildShipmentsExport(): Promise<Sheet[]> {
+  const rows = await fetchAll<ShipmentRow>((a, b) =>
+    supabase
+      .from("shipments")
+      .select("*, customers(full_name, code, whatsapp), order_items(id, qty, orders(order_code), event_items(books(title)))")
+      .order("created_at", { ascending: false }).order("id")
+      .range(a, b),
+  );
+  return [
+    {
+      name: "Pengiriman",
+      header: ["Diajukan", "Status", "Customer", "Kode", "WhatsApp", "Penerima", "HP Penerima", "Kurir", "Layanan", "Resi", "Ongkir", "Alamat", "Detail Alamat", "Kota", "Provinsi", "Kode Pos", "Dikirim", "Diterima", "Buku"],
+      rows: rows.map((s) => [
+        new Date(s.created_at),
+        s.delivered_at ? "Diterima" : s.tracking_number ? "Dalam pengiriman" : "Perlu resi",
+        s.customers?.full_name ?? null, s.customers?.code ?? null, phone(s.customers?.whatsapp),
+        s.recipient_name, phone(s.recipient_phone), s.courier, s.service, s.tracking_number, s.shipping_cost_idr,
+        s.address_street, s.address_detail, s.city, s.province, s.postal_code,
+        s.shipped_at ? new Date(s.shipped_at) : null, s.delivered_at ? new Date(s.delivered_at) : null,
+        s.order_items.map((i) => `${i.event_items?.books?.title ?? "?"} ×${i.qty} (${i.orders?.order_code ?? "?"})`).join("; "),
+      ]),
+    },
+  ];
 }

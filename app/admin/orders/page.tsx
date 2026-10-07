@@ -4,7 +4,8 @@ import { useCallback, useEffect, useMemo, useState } from "react";
 import Link from "next/link";
 import { supabase } from "@/lib/supabase/client";
 import { Pagination, usePagination } from "@/components/pagination";
-import { StatusChip } from "@/components/status-chip";
+import { ORDER_STATUS_MAP, PAYMENT_STATE_MAP, SHIPPING_STATUS_MAP, StatusChip } from "@/components/status-chip";
+import { ExportButton, fetchAll, phone, type Sheet } from "@/components/admin/export-button";
 import { formatIDR, formatDateID } from "@/lib/format";
 import { SortTh, sortRows, useSort, type SortState } from "@/components/admin/sortable";
 import type { Database } from "@/types/database";
@@ -125,9 +126,12 @@ export default function AdminOrdersPage() {
     <div>
       <div className="flex items-center justify-between">
         <h1 className="font-display text-xl font-bold text-ink">Order</h1>
-        <Link href="/admin/orders/new" className="btn btn-primary press px-4 py-2 text-sm font-semibold">
-          + Order Manual
-        </Link>
+        <div className="flex flex-wrap items-center gap-2">
+          <ExportButton fileName="order" build={buildOrdersExport} />
+          <Link href="/admin/orders/new" className="btn btn-primary press px-4 py-2 text-sm font-semibold">
+            + Order Manual
+          </Link>
+        </div>
       </div>
 
       <div className="mt-4 flex flex-wrap gap-3">
@@ -180,7 +184,7 @@ export default function AdminOrdersPage() {
         <table className="w-full text-sm">
           <thead className="border-b border-ink bg-surface-sunken text-left">
             <tr>
-              <SortTh label="Kode" sortKey="order_code" sort={sort} onSort={onSort} />
+              <SortTh label="No. Order" sortKey="order_code" sort={sort} onSort={onSort} />
               <SortTh label="Customer" sortKey="customer" sort={sort} onSort={onSort} />
               <SortTh label="Event" sortKey="event" sort={sort} onSort={onSort} />
               <SortTh label="Status Bayar" sortKey="payment" sort={sort} onSort={onSort} />
@@ -234,4 +238,76 @@ export default function AdminOrdersPage() {
       <Pagination {...pagination} unit="order" />
     </div>
   );
+}
+
+type ExportOrder = {
+  id: string;
+  order_code: string;
+  created_at: string;
+  status: string;
+  subtotal_idr: number;
+  discount_idr: number;
+  total_idr: number | null;
+  customer_notes: string | null;
+  customers: { full_name: string; code: string; whatsapp: string } | null;
+  events: { name: string } | null;
+};
+type ExportItem = {
+  order_id: string;
+  qty: number;
+  unit_price_idr: number;
+  shipping_status: string;
+  event_items: { books: { title: string; isbn: string | null } | null } | null;
+};
+
+// Semua order (termasuk batal), tidak ikut filter layar — disaring di Excel.
+async function buildOrdersExport(): Promise<Sheet[]> {
+  const [orders, items, pays] = await Promise.all([
+    fetchAll<ExportOrder>((a, b) =>
+      supabase
+        .from("orders")
+        .select("id, order_code, created_at, status, subtotal_idr, discount_idr, total_idr, customer_notes, customers(full_name, code, whatsapp), events(name)")
+        .order("created_at", { ascending: false }).order("id")
+        .range(a, b),
+    ),
+    fetchAll<ExportItem>((a, b) =>
+      supabase
+        .from("order_items")
+        .select("order_id, qty, unit_price_idr, shipping_status, event_items(books(title, isbn))")
+        .order("id")
+        .range(a, b),
+    ),
+    fetchAll<PaymentState>((a, b) => supabase.from("v_order_payment").select("*").order("order_id").range(a, b)),
+  ]);
+  const pay = new Map(pays.map((p) => [p.order_id, p]));
+  const byId = new Map(orders.map((o) => [o.id, o]));
+  return [
+    {
+      name: "Order",
+      header: ["Tanggal", "No. Order", "Customer", "Kode Customer", "WhatsApp", "Batch", "Status Order", "Subtotal", "Diskon", "Total", "Dibayar", "Sisa", "Status Bayar", "Catatan Customer"],
+      rows: orders.map((o) => {
+        const p = pay.get(o.id);
+        return [
+          new Date(o.created_at), o.order_code, o.customers?.full_name ?? null, o.customers?.code ?? null, phone(o.customers?.whatsapp),
+          o.events?.name ?? null, ORDER_STATUS_MAP[o.status]?.label ?? o.status, o.subtotal_idr, o.discount_idr, o.total_idr,
+          p?.paid_idr ?? 0, p?.balance_idr ?? null, PAYMENT_STATE_MAP[p?.payment_state ?? "not_paid"]?.label ?? null, o.customer_notes,
+        ];
+      }),
+    },
+    {
+      name: "Detail Buku",
+      header: ["Tanggal", "No. Order", "Customer", "Batch", "Status Order", "Judul", "ISBN", "Qty", "Harga Satuan", "Subtotal", "Status Kirim"],
+      rows: items
+        .filter((i) => byId.has(i.order_id))
+        .sort((x, y) => byId.get(y.order_id)!.created_at.localeCompare(byId.get(x.order_id)!.created_at))
+        .map((i) => {
+          const o = byId.get(i.order_id)!;
+          return [
+            new Date(o.created_at), o.order_code, o.customers?.full_name ?? null, o.events?.name ?? null, ORDER_STATUS_MAP[o.status]?.label ?? o.status,
+            i.event_items?.books?.title ?? null, i.event_items?.books?.isbn ?? null, i.qty, i.unit_price_idr, i.qty * i.unit_price_idr,
+            SHIPPING_STATUS_MAP[i.shipping_status]?.label ?? i.shipping_status,
+          ];
+        }),
+    },
+  ];
 }

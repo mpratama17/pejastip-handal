@@ -198,6 +198,12 @@ body {
   font-family: var(--font-sans), system-ui, sans-serif;
 }
 
+@media print {
+  body {
+    background: white;
+  }
+}
+
 h1,
 h2,
 h3 {

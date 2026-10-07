@@ -1,7 +1,7 @@
 // docs/04-design-system.md §2.3 — SATU sumber kebenaran mapping warna status.
 // Dilarang mewarnai status secara ad-hoc di luar komponen ini.
 
-const PAYMENT_STATE_MAP: Record<string, { label: string; className: string }> = {
+export const PAYMENT_STATE_MAP: Record<string, { label: string; className: string }> = {
   not_paid: { label: "Belum Bayar", className: "bg-danger-soft text-danger" },
   partially_paid: { label: "DP Diterima", className: "bg-warning-soft text-warning" },
   fully_paid: { label: "Lunas", className: "bg-success-soft text-success" },
@@ -14,15 +14,14 @@ const PAYMENT_STATE_MAP: Record<string, { label: string; className: string }> = 
 // mengira "Belum Dikirim" berarti admin belum mengirim ke dia, padahal artinya
 // bukunya belum berangkat dari luar negeri. Labelnya sekarang menyebut kakinya.
 //
-// `not_shipped` di skema memang menampung dua keadaan sekaligus: belum
-// dibelanjakan, dan sudah dibeli tapi belum berangkat. "Belum Berangkat" jujur
-// untuk dua-duanya; memecahnya jadi dua status butuh migrasi enum, dan itu
-// keputusan terpisah.
+// `not_shipped` di skema menampung dua keadaan: belum dibelanjakan, dan sudah
+// dibeli tapi belum berangkat. Label "Ordered ke Publisher" permintaan client
+// (5 Okt) — sengaja label saja, memecahnya jadi dua status butuh migrasi enum.
 export const SHIPPING_STATUS_MAP: Record<string, { label: string; className: string }> = {
-  not_shipped: { label: "Belum Berangkat", className: "bg-surface-sunken text-ink-muted" },
+  not_shipped: { label: "Ordered ke Publisher", className: "bg-surface-sunken text-ink-muted" },
   shipped_to_indo: { label: "Menuju Indonesia", className: "bg-info-soft text-info" },
   arrived_in_indo: { label: "Tiba di Admin", className: "bg-primary-soft text-ink" },
-  waiting_courier: { label: "Menunggu Kurir", className: "bg-warning-soft text-warning" },
+  waiting_courier: { label: "Sedang Dikemas", className: "bg-warning-soft text-warning" },
   shipped: { label: "Dikirim ke Kamu", className: "bg-info-soft text-info" },
   delivered: { label: "Diterima", className: "bg-success-soft text-success" },
 };
@@ -38,7 +37,7 @@ export const EVENT_STATUS_MAP: Record<string, { label: string; className: string
   cancelled: { label: "Batal", className: "bg-danger-soft text-danger" },
 };
 
-const ORDER_STATUS_MAP: Record<string, { label: string; className: string }> = {
+export const ORDER_STATUS_MAP: Record<string, { label: string; className: string }> = {
   pending: { label: "Pending", className: "bg-warning-soft text-warning" },
   confirmed: { label: "Dikonfirmasi", className: "bg-info-soft text-info" },
   completed: { label: "Selesai", className: "bg-success-soft text-success" },
