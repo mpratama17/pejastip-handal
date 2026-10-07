@@ -5,6 +5,10 @@ import { supabase } from "@/lib/supabase/client";
 
 export type BankAccount = { bank: string; account_number: string; holder: string };
 export type TermsSection = { title: string; body: string };
+// Kirim via checkout Shopee ala Blossom: customer checkout produk nominal di toko
+// Shopee (memakai ongkir/voucher Shopee), harga buku tetap lunas lewat transfer,
+// lalu nominal dikembalikan dikurangi biaya admin setelah pesanan Shopee selesai.
+export type ShopeeCheckout = { link: string; nominal_idr: number; fee_percent: number; fee_flat_idr: number };
 
 export type SiteSettings = {
   store_name: string;
@@ -16,6 +20,7 @@ export type SiteSettings = {
   bank_accounts: BankAccount[];
   couriers: string[];
   terms: TermsSection[];
+  shopee_checkout: ShopeeCheckout;
 };
 
 const DEFAULTS: SiteSettings = {
@@ -28,6 +33,7 @@ const DEFAULTS: SiteSettings = {
   bank_accounts: [],
   couriers: [],
   terms: [],
+  shopee_checkout: { link: "", nominal_idr: 0, fee_percent: 20, fee_flat_idr: 1250 },
 };
 
 // Satu fetch per page load, dibagi semua komponen (header, footer, halaman).
@@ -54,3 +60,9 @@ export function waLink(number: string, text?: string): string {
   const digits = number.replace(/\D/g, "");
   return `https://wa.me/${digits}${text ? `?text=${encodeURIComponent(text)}` : ""}`;
 }
+
+// Opsi kurir mana pun yang namanya memuat "Shopee" = alur checkout Shopee.
+export const isShopeeCourier = (courier: string | null | undefined) => /shopee/i.test(courier ?? "");
+
+export const shopeeRefund = (s: ShopeeCheckout) =>
+  Math.max(0, s.nominal_idr - Math.ceil((s.nominal_idr * s.fee_percent) / 100) - s.fee_flat_idr);

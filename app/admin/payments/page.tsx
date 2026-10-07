@@ -6,6 +6,8 @@ import { supabase } from "@/lib/supabase/client";
 import { Pagination, usePagination } from "@/components/pagination";
 import { formatIDR, formatDateID } from "@/lib/format";
 import { StatusChip } from "@/components/status-chip";
+import { PAYMENT_METHOD_LABEL } from "@/lib/labels";
+import { ExportButton, fetchAll, phone, type Sheet } from "@/components/admin/export-button";
 import type { Database } from "@/types/database";
 
 type PaymentRow = Database["public"]["Tables"]["payments"]["Row"] & {
@@ -56,7 +58,10 @@ export default function AdminPaymentsPage() {
 
   return (
     <div>
-      <h1 className="font-display text-xl font-bold text-ink">Verifikasi pembayaran</h1>
+      <div className="flex flex-wrap items-center justify-between gap-3">
+        <h1 className="font-display text-xl font-bold text-ink">Verifikasi pembayaran</h1>
+        <ExportButton fileName="pembayaran" build={buildPaymentsExport} />
+      </div>
 
       <div className="mt-4 flex gap-1 rounded-md bg-surface-sunken p-1 text-sm sm:inline-flex">
         {(["pending", "reviewed"] as const).map((f) => (
@@ -275,4 +280,27 @@ function PaymentCard({
       </div>
     </article>
   );
+}
+
+// Semua pembayaran (menunggu + riwayat), tidak ikut tab.
+async function buildPaymentsExport(): Promise<Sheet[]> {
+  const rows = await fetchAll<PaymentRow>((a, b) =>
+    supabase
+      .from("payments")
+      .select("*, orders(id, order_code, total_idr, customers(full_name, code, whatsapp))")
+      .order("created_at", { ascending: false }).order("id")
+      .range(a, b),
+  );
+  return [
+    {
+      name: "Pembayaran",
+      header: ["Masuk", "No. Order", "Customer", "WhatsApp", "Nominal", "Metode", "Tanggal Transfer", "Status", "Diverifikasi", "Sumber", "Catatan"],
+      rows: rows.map((p) => [
+        new Date(p.created_at), p.orders?.order_code ?? null, p.orders?.customers?.full_name ?? null, phone(p.orders?.customers?.whatsapp),
+        p.amount_idr, PAYMENT_METHOD_LABEL[p.method] ?? p.method, p.paid_at ? new Date(p.paid_at) : null,
+        REVIEW_STATUS_LABEL[p.status] ?? p.status, p.verified_at ? new Date(p.verified_at) : null,
+        p.proof_url ? "Bukti customer" : "Dicatat admin", p.notes,
+      ]),
+    },
+  ];
 }

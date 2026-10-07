@@ -3,7 +3,8 @@
 import { useEffect, useState } from "react";
 import { supabase } from "@/lib/supabase/client";
 import { EVENT_TYPE_LABEL } from "@/lib/labels";
-import type { BankAccount, TermsSection } from "@/lib/site-settings";
+import { isShopeeCourier, shopeeRefund, type BankAccount, type ShopeeCheckout, type TermsSection } from "@/lib/site-settings";
+import { formatIDR } from "@/lib/format";
 import type { Database, Json } from "@/types/database";
 
 type EventType = Database["public"]["Enums"]["event_type"];
@@ -19,6 +20,7 @@ type Form = {
   couriers: string[];
   default_dp_percent: Record<EventType, number>;
   terms: TermsSection[];
+  shopee_checkout: ShopeeCheckout;
 };
 
 const EVENT_TYPES = Object.keys(EVENT_TYPE_LABEL) as EventType[];
@@ -59,6 +61,7 @@ export default function AdminSettingsPage() {
           couriers: (v.couriers as string[]) ?? [],
           default_dp_percent: (v.default_dp_percent as Record<EventType, number>) ?? ({} as Record<EventType, number>),
           terms: (v.terms as TermsSection[]) ?? [],
+          shopee_checkout: { link: "", nominal_idr: 0, fee_percent: 20, fee_flat_idr: 1250, ...(v.shopee_checkout as Partial<ShopeeCheckout>) },
         });
       });
   }, []);
@@ -168,6 +171,56 @@ export default function AdminSettingsPage() {
           ))}
         </div>
         <AddButton onClick={() => set("couriers", [...form.couriers, ""])}>Tambah kurir</AddButton>
+      </Section>
+
+      <Section
+        title="Kirim via checkout Shopee"
+        form={form}
+        keys={["shopee_checkout"]}
+        prepare={(f) => ({ ...f, shopee_checkout: { ...f.shopee_checkout, link: f.shopee_checkout.link.trim() } })}
+        validate={(f) => {
+          const sc = f.shopee_checkout;
+          if (!f.couriers.some(isShopeeCourier)) return null; // belum aktif, boleh kosong
+          if (!/^https?:\/\//.test(sc.link.trim())) return "Isi link produk nominal di Shopee.";
+          if (!(sc.nominal_idr > 0)) return "Isi nominal checkout.";
+          if (!(sc.fee_percent >= 0 && sc.fee_percent <= 100) || !(sc.fee_flat_idr >= 0)) return "Biaya admin tidak valid.";
+          return null;
+        }}
+      >
+        <p className="text-sm text-ink-muted">
+          Aktif kalau di daftar Kurir ada pilihan yang namanya memuat &ldquo;Shopee&rdquo; (mis. &ldquo;Checkout Shopee&rdquo;).
+          Status sekarang: <b>{form.couriers.some(isShopeeCourier) ? "aktif" : "belum aktif"}</b>.
+        </p>
+        <Field label="Link produk nominal di Shopee" hint="Produk yang di-checkout customer untuk memakai ongkir Shopee.">
+          <input
+            type="url"
+            value={form.shopee_checkout.link}
+            onChange={(e) => set("shopee_checkout", { ...form.shopee_checkout, link: e.target.value })}
+            className={inputCls}
+          />
+        </Field>
+        <div className="grid gap-4 sm:grid-cols-3">
+          {(
+            [
+              ["nominal_idr", "Nominal checkout (Rp)"],
+              ["fee_percent", "Biaya admin (%)"],
+              ["fee_flat_idr", "Biaya admin tetap (Rp)"],
+            ] as const
+          ).map(([k, label]) => (
+            <Field key={k} label={label}>
+              <input
+                type="number"
+                min={0}
+                value={form.shopee_checkout[k]}
+                onChange={(e) => set("shopee_checkout", { ...form.shopee_checkout, [k]: Number(e.target.value) })}
+                className={`${inputCls} tabular-nums`}
+              />
+            </Field>
+          ))}
+        </div>
+        <p className="text-sm text-ink-muted">
+          Refund ke customer setelah pesanan Shopee selesai: <b className="tabular-nums">{formatIDR(shopeeRefund(form.shopee_checkout))}</b>
+        </p>
       </Section>
 
       <Section

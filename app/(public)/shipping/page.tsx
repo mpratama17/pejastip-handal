@@ -5,7 +5,7 @@ import Link from "next/link";
 import { useSearchParams } from "next/navigation";
 import { supabase } from "@/lib/supabase/client";
 import { formatIDR } from "@/lib/format";
-import { useSiteSettings } from "@/lib/site-settings";
+import { isShopeeCourier, shopeeRefund, useSiteSettings, type ShopeeCheckout } from "@/lib/site-settings";
 // get_shippable_items mengembalikan jsonb {matched, items}: kode/WA salah = matched false,
 // bukan error, supaya tebakan salah ikut terhitung rate limit.
 type ShippableItem = {
@@ -52,6 +52,8 @@ function ShippingForm() {
   const [courier, setCourier] = useState("");
   const [address, setAddress] = useState({ street: "", detail: "", province: "", city: "", postal: "" });
   const [confirmed, setConfirmed] = useState(false);
+  const [shopeeAgreed, setShopeeAgreed] = useState(false);
+  const viaShopee = isShopeeCourier(courier);
   const [submitting, setSubmitting] = useState(false);
   const [submitError, setSubmitError] = useState<string | null>(null);
   const [done, setDone] = useState<string[] | null>(null);
@@ -93,6 +95,7 @@ function ShippingForm() {
     if (selected.size === 0) return setSubmitError("Pilih minimal satu buku.");
     if (!/^\d{5}$/.test(address.postal)) return setSubmitError("Kode pos harus 5 digit.");
     if (!confirmed) return setSubmitError("Centang konfirmasi alamat dulu.");
+    if (viaShopee && !shopeeAgreed) return setSubmitError("Centang persetujuan kirim via Shopee dulu.");
     setSubmitting(true);
     setSubmitError(null);
     const { data: shipmentId, error } = await supabase.rpc("create_shipment", {
@@ -128,8 +131,26 @@ function ShippingForm() {
           </ul>
         </div>
         <p className="mt-5 text-sm text-ink-muted">
-          Ongkir dihitung setelah paket ditimbang dan dikabari lewat WhatsApp. Nomor resi muncul di Lacak Order begitu paket
-          diserahkan ke {courier}.
+          {viaShopee ? (
+            <>
+              Langkah berikutnya: checkout produk nominal di Shopee
+              {settings?.shopee_checkout.link && (
+                <>
+                  {" "}(
+                  <a href={settings.shopee_checkout.link} target="_blank" rel="noopener noreferrer" className="font-medium text-link hover:underline">
+                    buka link
+                  </a>
+                  )
+                </>
+              )}{" "}
+              dengan alamat yang sama. Nomor resi muncul di Lacak Order setelah paket dikirim.
+            </>
+          ) : (
+            <>
+              Ongkir dihitung setelah paket ditimbang dan dikabari lewat WhatsApp. Nomor resi muncul di Lacak Order begitu paket
+              diserahkan ke {courier}.
+            </>
+          )}
         </p>
         <Link
           href={`/track?code=${code.trim().toUpperCase()}`}
@@ -262,6 +283,7 @@ function ShippingForm() {
                     ))}
                   </select>
                 </label>
+                {viaShopee && settings && <ShopeeInfo s={settings.shopee_checkout} />}
                 <label className="block text-sm font-medium sm:col-span-2">
                   Nama jalan
                   <input required maxLength={500} value={address.street} onChange={(e) => setAddress({ ...address, street: e.target.value })} autoComplete="address-line1" className={INPUT} />
@@ -310,6 +332,15 @@ function ShippingForm() {
                 </span>
               </label>
 
+              {viaShopee && (
+                <label className="mt-3 flex items-start gap-2.5 text-sm">
+                  <input type="checkbox" checked={shopeeAgreed} onChange={(e) => setShopeeAgreed(e.target.checked)} className="mt-0.5 h-4 w-4 accent-[var(--color-primary)]" />
+                  <span>
+                    Saya paham: buku hilang/rusak di perjalanan Shopee menjadi risiko saya, dan ganti rugi paling banyak sebesar nominal checkout.
+                  </span>
+                </label>
+              )}
+
               {submitError && <p className="mt-3 text-sm text-danger" role="alert">{submitError}</p>}
               <button
                 type="submit"
@@ -322,6 +353,45 @@ function ShippingForm() {
           )}
         </form>
       )}
+    </div>
+  );
+}
+
+function ShopeeInfo({ s }: { s: ShopeeCheckout }) {
+  // Admin belum mengisi link/nominal di Pengaturan: jangan tampilkan "Rp0".
+  const ready = !!s.link && s.nominal_idr > 0;
+  return (
+    <div className="rounded-md border border-ink bg-sky-soft p-3 text-sm sm:col-span-2">
+      <p className="font-bold">Cara kirim via checkout Shopee</p>
+      <ol className="mt-1.5 list-decimal space-y-1 pl-5">
+        <li>Ajukan form ini dulu.</li>
+        <li>
+          {ready ? (
+            <>
+              Checkout produk nominal <b className="tabular-nums">{formatIDR(s.nominal_idr)}</b> di{" "}
+              <a href={s.link} target="_blank" rel="noopener noreferrer" className="font-medium text-link hover:underline">
+                toko Shopee kami
+              </a>{" "}
+              dengan alamat yang sama.
+            </>
+          ) : (
+            "Admin mengirim link & nominal checkout Shopee lewat WhatsApp; checkout dengan alamat yang sama."
+          )}{" "}
+          Ongkir mengikuti Shopee (voucher bisa dipakai).
+        </li>
+        <li>
+          Setelah pesanan Shopee selesai, nominal dikembalikan dikurangi biaya admin {s.fee_percent}% + {formatIDR(s.fee_flat_idr)}
+          {ready && (
+            <>
+              : kamu menerima <b className="tabular-nums">{formatIDR(shopeeRefund(s))}</b>
+            </>
+          )}
+          . Admin menanyakan rekening/e-wallet tujuan lewat WhatsApp.
+        </li>
+      </ol>
+      <p className="mt-2 text-xs text-ink-muted">
+        Harga buku tetap dibayar penuh lewat transfer seperti biasa — checkout Shopee hanya untuk pengirimannya.
+      </p>
     </div>
   );
 }

@@ -84,7 +84,7 @@ export default function AdminDashboardPage() {
             <thead className="border-b border-ink bg-surface-sunken text-left">
               <tr>
                 <th className="px-4 py-2 font-medium">Tanggal</th>
-                <th className="px-4 py-2 font-medium">Kode</th>
+                <th className="px-4 py-2 font-medium">No. Order</th>
                 <th className="px-4 py-2 font-medium">Customer</th>
                 <th className="px-4 py-2 font-medium">Event</th>
                 <th className="px-4 py-2 text-right font-medium">Total</th>

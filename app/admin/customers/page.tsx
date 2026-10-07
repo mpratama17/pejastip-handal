@@ -9,6 +9,7 @@ import { useConfirm } from "@/components/admin/confirm-dialog";
 import { formatIDR, formatDateID } from "@/lib/format";
 import { StatusChip } from "@/components/status-chip";
 import { SortTh, sortRows, useSort } from "@/components/admin/sortable";
+import { ExportButton, fetchAll, phone, type Sheet } from "@/components/admin/export-button";
 import type { Database } from "@/types/database";
 
 type Customer = Database["public"]["Tables"]["customers"]["Row"];
@@ -65,7 +66,10 @@ function Customers() {
 
   return (
     <div>
-      <h1 className="font-display text-xl font-bold text-ink">Customer</h1>
+      <div className="flex flex-wrap items-center justify-between gap-3">
+        <h1 className="font-display text-xl font-bold text-ink">Customer</h1>
+        <ExportButton fileName="customer" build={buildCustomersExport} />
+      </div>
 
       <div className="mt-4 grid gap-6 xl:grid-cols-[1fr_28rem]">
         <div className="min-w-0">
@@ -273,4 +277,22 @@ function CustomerDetail({ customer: c, onChanged }: { customer: Customer; onChan
       {message && <p className="mt-3 text-sm text-ink-muted" role="status">{message}</p>}
     </aside>
   );
+}
+
+async function buildCustomersExport(): Promise<Sheet[]> {
+  const [customers, balances] = await Promise.all([
+    fetchAll<Customer>((a, b) => supabase.from("customers").select("*").order("created_at", { ascending: false }).order("id").range(a, b)),
+    fetchAll<Balance>((a, b) => supabase.from("v_customer_balance").select("*").order("customer_id").range(a, b)),
+  ]);
+  const bal = new Map(balances.map((b) => [b.customer_id, b]));
+  return [
+    {
+      name: "Customer",
+      header: ["Nama", "Kode", "WhatsApp", "Instagram", "Piutang", "Order Belum Lunas", "Blacklist", "Alasan Blacklist", "Catatan Admin", "Terdaftar"],
+      rows: customers.map((c) => [
+        c.full_name, c.code, phone(c.whatsapp), c.instagram, bal.get(c.id)?.total_balance_idr ?? 0, bal.get(c.id)?.unpaid_orders ?? 0,
+        c.is_blacklisted ? "Ya" : "Tidak", c.blacklist_reason, c.notes, new Date(c.created_at),
+      ]),
+    },
+  ];
 }

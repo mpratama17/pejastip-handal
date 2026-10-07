@@ -6,6 +6,7 @@ import { Pagination, usePagination } from "@/components/pagination";
 import { formatDateID } from "@/lib/format";
 import { BOOK_FORMAT_LABEL } from "@/lib/labels";
 import { waLink } from "@/lib/site-settings";
+import { ExportButton, fetchAll, phone, type Sheet } from "@/components/admin/export-button";
 import type { Database } from "@/types/database";
 
 type RequestRow = Database["public"]["Tables"]["book_requests"]["Row"];
@@ -46,10 +47,13 @@ export default function AdminRequestsPage() {
     <div>
       <div className="flex flex-wrap items-center justify-between gap-3">
         <h1 className="font-display text-xl font-bold text-ink">Request buku</h1>
-        <label className="flex items-center gap-2 text-sm text-ink-muted">
-          <input type="checkbox" checked={showClosed} onChange={(e) => setShowClosed(e.target.checked)} />
-          Tampilkan yang sudah selesai
-        </label>
+        <div className="flex flex-wrap items-center gap-3">
+          <label className="flex items-center gap-2 text-sm text-ink-muted">
+            <input type="checkbox" checked={showClosed} onChange={(e) => setShowClosed(e.target.checked)} />
+            Tampilkan yang sudah selesai
+          </label>
+          <ExportButton fileName="request-buku" build={buildRequestsExport} />
+        </div>
       </div>
 
       <div className="mt-4 overflow-x-auto rounded-lg border border-border">
@@ -117,4 +121,21 @@ export default function AdminRequestsPage() {
       <Pagination {...pagination} unit="request" />
     </div>
   );
+}
+
+// Semua request, termasuk yang sudah selesai.
+async function buildRequestsExport(): Promise<Sheet[]> {
+  const rows = await fetchAll<RequestRow>((a, b) =>
+    supabase.from("book_requests").select("*").order("created_at", { ascending: false }).order("id").range(a, b),
+  );
+  return [
+    {
+      name: "Request Buku",
+      header: ["Masuk", "Judul", "ISBN", "Format", "Peminta", "WhatsApp", "Status", "Catatan"],
+      rows: rows.map((r) => [
+        new Date(r.created_at), r.title, r.isbn, r.format ? BOOK_FORMAT_LABEL[r.format] : null, r.customer_name, phone(r.whatsapp),
+        STATUS.find((s) => s.value === r.status)?.label ?? r.status, r.notes,
+      ]),
+    },
+  ];
 }

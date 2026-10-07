@@ -6,7 +6,7 @@ import { useRouter, useSearchParams } from "next/navigation";
 import { supabase } from "@/lib/supabase/client";
 import { formatIDR, formatDateID } from "@/lib/format";
 import { useSiteSettings, waLink } from "@/lib/site-settings";
-import { StatusChip } from "@/components/status-chip";
+import { SHIPPING_STATUS_MAP, StatusChip } from "@/components/status-chip";
 import { StarSticker } from "@/components/public/stickers";
 import { PaymentProofUpload } from "@/components/public/payment-proof-upload";
 import type { Database } from "@/types/database";
@@ -15,6 +15,7 @@ type TrackerRow = Database["public"]["Functions"]["get_tracker"]["Returns"][numb
 type TrackerItem = {
   title: string;
   qty: number;
+  unit_price_idr?: number; // ada sejak migration 20261004
   shipping_status: string;
   courier: string | null;
   tracking_number: string | null;
@@ -82,7 +83,9 @@ function Tracker() {
   }
 
   return (
-    <div className="mx-auto max-w-2xl px-4 py-10">
+    <>
+    {orders && orders.length > 0 && <OrderRecap orders={orders} code={urlCode} storeName={settings?.store_name ?? ""} />}
+    <div className="mx-auto max-w-2xl px-4 py-10 print:hidden">
       <h1 className="font-display text-3xl font-bold">Lacak order</h1>
       <p className="mt-1 text-sm text-ink-muted">Masukkan kode pelacakan yang muncul setelah kamu order.</p>
 
@@ -135,7 +138,17 @@ function Tracker() {
         </div>
       )}
 
-      <div className="mt-6 flex flex-col gap-4">
+      {orders && orders.length > 0 && (
+        <div className="mt-6 flex flex-wrap items-center justify-between gap-2">
+          <p className="text-sm text-ink-muted">{orders.length} order untuk kode ini.</p>
+          {/* Browser yang membuat PDF-nya (Simpan sebagai PDF) — tanpa library, jalan juga di HP. */}
+          <button type="button" onClick={() => window.print()} className="btn btn-secondary press px-4 py-2 text-sm">
+            Unduh rekap (PDF)
+          </button>
+        </div>
+      )}
+
+      <div className="mt-4 flex flex-col gap-4">
         {orders?.map((o) => {
           const items = (o.items as unknown as TrackerItem[]) ?? [];
           const payments = (o.payments as unknown as TrackerPayment[]) ?? [];
@@ -219,19 +232,19 @@ function Tracker() {
 
               {/* Urutan enam status itu tidak terbaca dari chip satuan. Ditaruh
                   collapsed supaya yang sudah paham tidak terganggu, tapi yang
-                  bingung "kenapa masih Belum Berangkat" punya tempat bertanya. */}
+                  bingung "kenapa masih Ordered ke Publisher" punya tempat bertanya. */}
               {!cancelled && (
                 <details className="mt-3 text-sm">
                   <summary className="cursor-pointer text-ink-muted">Arti status pengiriman</summary>
                   <div className="mt-2 rounded-md border-[1.5px] border-ink bg-surface-sunken p-3 text-xs">
                     <p className="font-semibold text-ink">Dari luar negeri ke admin</p>
                     <p className="mt-0.5 text-ink-muted">
-                      Belum Berangkat, lalu Menuju Indonesia, lalu Tiba di Admin. Belum Berangkat berarti bukumu
-                      belum jalan dari penjual di sana.
+                      Ordered ke Publisher, lalu Menuju Indonesia, lalu Tiba di Admin. Ordered ke Publisher berarti
+                      bukumu dipesan dan belum jalan dari penjual di sana.
                     </p>
                     <p className="mt-2 font-semibold text-ink">Dari admin ke kamu</p>
                     <p className="mt-0.5 text-ink-muted">
-                      Menunggu Kurir, lalu Dikirim ke Kamu, lalu Diterima. Nomor resi muncul begitu paketmu
+                      Sedang Dikemas, lalu Dikirim ke Kamu, lalu Diterima. Nomor resi muncul begitu paketmu
                       diserahkan ke kurir.
                     </p>
                   </div>
@@ -308,6 +321,81 @@ function Tracker() {
           </Link>
         </p>
       )}
+    </div>
+    </>
+  );
+}
+
+// Rekap semua order untuk dicetak / disimpan sebagai PDF. Hanya tampil saat print.
+function OrderRecap({ orders, code, storeName }: { orders: TrackerRow[]; code: string; storeName: string }) {
+  const active = orders.filter((o) => o.order_status !== "cancelled");
+  const sum = (f: (o: TrackerRow) => number) => active.reduce((a, o) => a + f(o), 0);
+  const cell = "border border-ink/40 px-2 py-1";
+  return (
+    <div className="hidden bg-white p-2 text-[11px] text-black print:block">
+      <header className="flex items-end justify-between border-b-2 border-black pb-2">
+        <div>
+          <p className="text-lg font-bold">{storeName || "Rekap order"}</p>
+          {/* Kode disamarkan: rekap gampang diteruskan, sedangkan kode + WA = kunci Form Kirim. */}
+          <p>Rekap order · kode {code.slice(0, 4)}••••</p>
+        </div>
+        <p>Dicetak {formatDateID(new Date().toISOString())}</p>
+      </header>
+
+      {orders.map((o) => {
+        const items = (o.items as unknown as TrackerItem[]) ?? [];
+        const cancelled = o.order_status === "cancelled";
+        return (
+          <section key={o.order_id} className="mt-4 break-inside-avoid">
+            <p className="font-bold">
+              {o.order_code} · {o.event_name} · {formatDateID(o.created_at)}
+              {cancelled && " · DIBATALKAN"}
+            </p>
+            <table className="mt-1 w-full border-collapse">
+              <thead>
+                <tr className="text-left">
+                  <th className={cell}>Judul</th>
+                  <th className={`${cell} text-right`}>Qty</th>
+                  <th className={`${cell} text-right`}>Harga</th>
+                  <th className={`${cell} text-right`}>Jumlah</th>
+                  <th className={cell}>Status</th>
+                </tr>
+              </thead>
+              <tbody>
+                {items.map((it, i) => (
+                  <tr key={i}>
+                    <td className={cell}>{it.title}</td>
+                    <td className={`${cell} text-right`}>{it.qty}</td>
+                    <td className={`${cell} text-right tabular-nums`}>{it.unit_price_idr != null ? formatIDR(it.unit_price_idr) : "—"}</td>
+                    <td className={`${cell} text-right tabular-nums`}>{it.unit_price_idr != null ? formatIDR(it.unit_price_idr * it.qty) : "—"}</td>
+                    <td className={cell}>
+                      {cancelled ? "Batal" : (SHIPPING_STATUS_MAP[it.shipping_status]?.label ?? it.shipping_status)}
+                      {it.tracking_number ? ` · resi ${it.courier} ${it.tracking_number}` : ""}
+                    </td>
+                  </tr>
+                ))}
+              </tbody>
+            </table>
+            {!cancelled && (
+              <p className="mt-1 text-right tabular-nums">
+                {/* Total sudah dipotong diskon; tampilkan selisihnya supaya baris buku cocok dengan Total. */}
+                {(() => {
+                  const sub = items.reduce((a, it) => a + (it.unit_price_idr ?? 0) * it.qty, 0);
+                  return items.every((it) => it.unit_price_idr != null) && sub > o.total_idr
+                    ? `Subtotal ${formatIDR(sub)} · Diskon −${formatIDR(sub - o.total_idr)} · `
+                    : "";
+                })()}
+                Total {formatIDR(o.total_idr)} · Terbayar {formatIDR(o.paid_idr)} · <b>Sisa {formatIDR(o.balance_idr)}</b>
+              </p>
+            )}
+          </section>
+        );
+      })}
+
+      <p className="mt-5 border-t-2 border-black pt-2 text-right text-xs tabular-nums">
+        Semua order aktif — Total {formatIDR(sum((o) => o.total_idr))} · Terbayar {formatIDR(sum((o) => o.paid_idr))} ·{" "}
+        <b>Sisa tagihan {formatIDR(sum((o) => o.balance_idr))}</b>
+      </p>
     </div>
   );
 }
