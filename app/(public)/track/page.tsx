@@ -1,6 +1,6 @@
 "use client";
 
-import { Suspense, useCallback, useEffect, useState } from "react";
+import { Fragment, Suspense, useCallback, useEffect, useState } from "react";
 import Link from "next/link";
 import { useRouter, useSearchParams } from "next/navigation";
 import { supabase } from "@/lib/supabase/client";
@@ -47,6 +47,15 @@ function Tracker() {
   const [loading, setLoading] = useState(false);
   const [error, setError] = useState<string | null>(null);
   const [uploadFor, setUploadFor] = useState<string | null>(null);
+  // Baris order yang detailnya terbuka. Satu order saja → langsung terbuka.
+  const [open, setOpen] = useState<Set<string>>(new Set());
+  const toggle = (id: string) =>
+    setOpen((prev) => {
+      const next = new Set(prev);
+      if (next.has(id)) next.delete(id);
+      else next.add(id);
+      return next;
+    });
 
   const lookup = useCallback(async (code: string) => {
     setLoading(true);
@@ -65,6 +74,8 @@ function Tracker() {
       return;
     }
     setOrders(data);
+    // Muat ulang (mis. setelah upload bukti) tidak menutup baris yang sedang dibuka.
+    if (data.length === 1) setOpen(new Set([data[0].order_id]));
   }, []);
 
   // Kode di URL = sumber kebenaran → bisa dibagikan/di-bookmark.
@@ -148,165 +159,202 @@ function Tracker() {
         </div>
       )}
 
-      <div className="mt-4 flex flex-col gap-4">
-        {orders?.map((o) => {
-          const items = (o.items as unknown as TrackerItem[]) ?? [];
-          const payments = (o.payments as unknown as TrackerPayment[]) ?? [];
-          const cancelled = o.order_status === "cancelled";
-          const owes = !cancelled && o.balance_idr > 0;
-          return (
-            <article key={o.order_id} className="card p-5 sm:p-6">
-              <header className="flex items-start justify-between gap-3">
-                <div>
-                  <h2 className="font-display text-xl font-bold">{o.order_code}</h2>
-                  <p className="text-sm text-ink-muted">
-                    {o.event_name} · {formatDateID(o.created_at)}
-                  </p>
-                </div>
-                {cancelled || o.order_status === "completed" ? (
-                  <StatusChip kind="order" status={o.order_status} />
-                ) : (
-                  <StatusChip kind="payment" status={o.payment_state} />
-                )}
-              </header>
-
-              {cancelled ? (
-                <p className="mt-4 rounded-md bg-danger-soft p-3 text-sm text-danger">
-                  Order ini dibatalkan.
-                  {o.paid_idr > 0 && (
-                    <>
-                      {" "}Pembayaran {formatIDR(o.paid_idr)} akan diselesaikan admin
-                      {settings?.wa_admin_number && (
-                        <>
-                          {", silakan "}
-                          <a
-                            href={waLink(settings.wa_admin_number, `Halo Admin, order ${o.order_code} saya dibatalkan. Bagaimana dengan pembayaran saya?`)}
-                            target="_blank"
-                            rel="noopener noreferrer"
-                            className="font-semibold underline underline-offset-2"
-                          >
-                            chat admin
-                          </a>
-                        </>
-                      )}
-                      .
-                    </>
-                  )}
-                </p>
-              ) : (
-                <dl className="mt-4 grid grid-cols-3 gap-2 rounded-md border border-ink bg-surface-sunken p-3 text-sm">
-                  <div>
-                    <dt className="text-xs text-ink-muted">Total</dt>
-                    <dd className="tabular-nums">{formatIDR(o.total_idr)}</dd>
-                  </div>
-                  <div>
-                    <dt className="text-xs text-ink-muted">Terbayar</dt>
-                    <dd className="tabular-nums">{formatIDR(o.paid_idr)}</dd>
-                  </div>
-                  <div>
-                    <dt className="text-xs text-ink-muted">Sisa tagihan</dt>
-                    <dd className={`font-display text-lg font-semibold tabular-nums ${owes ? "text-accent-ink" : "text-success"}`}>
-                      {formatIDR(o.balance_idr)}
-                    </dd>
-                  </div>
-                </dl>
-              )}
-
-              <ul className="mt-4 divide-y-1 divide-line">
-                {items.map((it, i) => (
-                  <li key={i} className="flex items-start justify-between gap-3 py-2.5 text-sm">
-                    <div>
-                      <p>
-                        {it.title} <span className="text-ink-muted">× {it.qty}</span>
-                      </p>
-                      {it.tracking_number && (
-                        <p className="mt-0.5 text-xs text-ink-muted">
-                          Resi {it.courier}: <span className="font-semibold tabular-nums text-ink">{it.tracking_number}</span>
-                        </p>
-                      )}
-                    </div>
-                    {!cancelled && <StatusChip kind="shipping" status={it.shipping_status} />}
-                  </li>
-                ))}
-              </ul>
-
-              {/* Urutan enam status itu tidak terbaca dari chip satuan. Ditaruh
-                  collapsed supaya yang sudah paham tidak terganggu, tapi yang
-                  bingung "kenapa masih Ordered ke Publisher" punya tempat bertanya. */}
-              {!cancelled && (
-                <details className="mt-3 text-sm">
-                  <summary className="cursor-pointer text-ink-muted">Arti status pengiriman</summary>
-                  <div className="mt-2 rounded-md border-[1.5px] border-ink bg-surface-sunken p-3 text-xs">
-                    <p className="font-semibold text-ink">Dari luar negeri ke admin</p>
-                    <p className="mt-0.5 text-ink-muted">
-                      Ordered ke Publisher, lalu Menuju Indonesia, lalu Tiba di Admin. Ordered ke Publisher berarti
-                      bukumu dipesan dan belum jalan dari penjual di sana.
-                    </p>
-                    <p className="mt-2 font-semibold text-ink">Dari admin ke kamu</p>
-                    <p className="mt-0.5 text-ink-muted">
-                      Sedang Dikemas, lalu Dikirim ke Kamu, lalu Diterima. Nomor resi muncul begitu paketmu
-                      diserahkan ke kurir.
-                    </p>
-                  </div>
-                </details>
-              )}
-
-              {payments.length > 0 && (
-                <details className="mt-3 text-sm">
-                  <summary className="cursor-pointer text-ink-muted">
-                    Riwayat pembayaran ({payments.length})
-                    {payments.some((p) => p.status === "rejected") && (
-                      <span className="ml-2 font-semibold text-danger">ada yang ditolak</span>
-                    )}
-                  </summary>
-                  <ul className="mt-2 flex flex-col gap-2">
-                    {payments.map((p, i) => (
-                      <li key={i} className="rounded-md border-[1.5px] border-ink bg-surface-sunken p-2.5">
-                        <div className="flex justify-between gap-2">
-                          <span className="tabular-nums">
-                            {formatIDR(p.amount_idr)} <span className="text-ink-faint">· {formatDateID(p.created_at)}</span>
+      {/* Satu baris per order; detail (buku, pembayaran, upload) dibuka per baris supaya
+          customer dengan banyak order tetap bisa membandingkan sekilas. */}
+      {orders && orders.length > 0 && (
+        <div className="mt-4 overflow-x-auto rounded-lg border border-ink bg-surface">
+          <table className="w-full text-sm">
+            <thead className="border-b border-ink bg-surface-sunken text-left">
+              <tr>
+                <th className="py-2.5 pl-3 pr-2 font-semibold">Order</th>
+                <th className="hidden py-2.5 pr-3 text-right font-semibold sm:table-cell">Total</th>
+                <th className="py-2.5 pr-3 text-right font-semibold">Sisa tagihan</th>
+                <th className="py-2.5 pr-3 font-semibold">Status</th>
+              </tr>
+            </thead>
+            <tbody>
+              {orders.map((o) => {
+                const items = (o.items as unknown as TrackerItem[]) ?? [];
+                const payments = (o.payments as unknown as TrackerPayment[]) ?? [];
+                const cancelled = o.order_status === "cancelled";
+                const owes = !cancelled && o.balance_idr > 0;
+                const isOpen = open.has(o.order_id);
+                return (
+                  <Fragment key={o.order_id}>
+                    <tr className={`border-t-1 border-line align-top first:border-0 ${isOpen ? "bg-primary-soft" : ""}`}>
+                      <td className="py-2.5 pl-3 pr-2">
+                        <button
+                          type="button"
+                          onClick={() => toggle(o.order_id)}
+                          aria-expanded={isOpen}
+                          className="text-left"
+                        >
+                          <span className="block font-display font-bold">{o.order_code}</span>
+                          <span className="block text-xs text-ink-muted">
+                            {o.event_name} · {formatDateID(o.created_at)}
                           </span>
-                          <span className={`font-semibold ${PAYMENT_REVIEW[p.status].className}`}>{PAYMENT_REVIEW[p.status].label}</span>
-                        </div>
-                        {p.note && <p className="mt-1 text-ink-muted">{p.note}</p>}
-                      </li>
-                    ))}
-                  </ul>
-                </details>
-              )}
+                          <span className="mt-0.5 block text-xs font-semibold text-link">
+                            {isOpen ? "Tutup detail ▴" : `Lihat ${items.length} buku ▾`}
+                          </span>
+                        </button>
+                      </td>
+                      <td className="hidden py-2.5 pr-3 text-right tabular-nums sm:table-cell">{formatIDR(o.total_idr)}</td>
+                      <td
+                        className={`py-2.5 pr-3 text-right font-semibold tabular-nums ${
+                          cancelled ? "text-ink-faint" : owes ? "text-accent-ink" : "text-success"
+                        }`}
+                      >
+                        {cancelled ? "—" : formatIDR(o.balance_idr)}
+                      </td>
+                      <td className="py-2.5 pr-3">
+                        {cancelled || o.order_status === "completed" ? (
+                          <StatusChip kind="order" status={o.order_status} />
+                        ) : (
+                          <StatusChip kind="payment" status={o.payment_state} />
+                        )}
+                      </td>
+                    </tr>
 
-              {o.admin_notes && (
-                <div className="mt-3 rounded-md border border-ink bg-sky-soft p-3 text-sm">
-                  <p className="text-xs font-bold">Catatan admin</p>
-                  <p className="mt-0.5 whitespace-pre-line">{o.admin_notes}</p>
-                </div>
-              )}
+                    {isOpen && (
+                      <tr className="bg-primary-soft/40">
+                        <td colSpan={4} className="px-3 pb-4 pt-1">
+                          {cancelled ? (
+                            <p className="rounded-md bg-danger-soft p-3 text-sm text-danger">
+                              Order ini dibatalkan.
+                              {o.paid_idr > 0 && (
+                                <>
+                                  {" "}Pembayaran {formatIDR(o.paid_idr)} akan diselesaikan admin
+                                  {settings?.wa_admin_number && (
+                                    <>
+                                      {", silakan "}
+                                      <a
+                                        href={waLink(settings.wa_admin_number, `Halo Admin, order ${o.order_code} saya dibatalkan. Bagaimana dengan pembayaran saya?`)}
+                                        target="_blank"
+                                        rel="noopener noreferrer"
+                                        className="font-semibold underline underline-offset-2"
+                                      >
+                                        chat admin
+                                      </a>
+                                    </>
+                                  )}
+                                  .
+                                </>
+                              )}
+                            </p>
+                          ) : (
+                            <p className="text-xs text-ink-muted tabular-nums">
+                              Total {formatIDR(o.total_idr)} · Terbayar {formatIDR(o.paid_idr)}
+                            </p>
+                          )}
 
-              {owes && (
-                <div className="mt-4 border-t-1 border-line pt-4">
-                  {uploadFor === o.order_id ? (
-                    <PaymentProofUpload
-                      orderId={o.order_id}
-                      orderCode={o.order_code}
-                      customerCode={urlCode}
-                      defaultAmount={o.balance_idr}
-                      onUploaded={() => lookup(urlCode)}
-                    />
-                  ) : (
-                    <button
-                      type="button"
-                      onClick={() => setUploadFor(o.order_id)}
-                      className="btn btn-secondary press px-4 py-2 text-sm"
-                    >
-                      Upload bukti pembayaran
-                    </button>
-                  )}
-                </div>
-              )}
-            </article>
-          );
-        })}
-      </div>
+                          <table className="mt-2 w-full text-sm">
+                            <thead className="text-left text-xs text-ink-muted">
+                              <tr>
+                                <th className="py-1 pr-2 font-medium">Buku</th>
+                                <th className="py-1 pr-2 text-right font-medium">Qty</th>
+                                {!cancelled && <th className="py-1 font-medium">Status kirim</th>}
+                              </tr>
+                            </thead>
+                            <tbody>
+                              {items.map((it, i) => (
+                                <tr key={i} className="border-t-1 border-line align-top">
+                                  <td className="py-1.5 pr-2">
+                                    {it.title}
+                                    {it.tracking_number && (
+                                      <span className="mt-0.5 block text-xs text-ink-muted">
+                                        Resi {it.courier}: <span className="font-semibold tabular-nums text-ink">{it.tracking_number}</span>
+                                      </span>
+                                    )}
+                                  </td>
+                                  <td className="py-1.5 pr-2 text-right tabular-nums">{it.qty}</td>
+                                  {!cancelled && (
+                                    <td className="py-1.5">
+                                      <StatusChip kind="shipping" status={it.shipping_status} />
+                                    </td>
+                                  )}
+                                </tr>
+                              ))}
+                            </tbody>
+                          </table>
+
+                          {payments.length > 0 && (
+                            <div className="mt-3">
+                              <p className="text-xs font-bold text-ink-muted">
+                                Riwayat pembayaran
+                                {payments.some((p) => p.status === "rejected") && (
+                                  <span className="ml-2 text-danger">ada yang ditolak</span>
+                                )}
+                              </p>
+                              <ul className="mt-1 flex flex-col gap-1">
+                                {payments.map((p, i) => (
+                                  <li key={i} className="text-sm">
+                                    <span className="tabular-nums">{formatIDR(p.amount_idr)}</span>{" "}
+                                    <span className="text-ink-faint">· {formatDateID(p.created_at)} ·</span>{" "}
+                                    <span className={`font-semibold ${PAYMENT_REVIEW[p.status].className}`}>{PAYMENT_REVIEW[p.status].label}</span>
+                                    {p.note && <span className="block text-xs text-ink-muted">{p.note}</span>}
+                                  </li>
+                                ))}
+                              </ul>
+                            </div>
+                          )}
+
+                          {o.admin_notes && (
+                            <div className="mt-3 rounded-md border border-ink bg-sky-soft p-3 text-sm">
+                              <p className="text-xs font-bold">Catatan admin</p>
+                              <p className="mt-0.5 whitespace-pre-line">{o.admin_notes}</p>
+                            </div>
+                          )}
+
+                          {owes && (
+                            <div className="mt-3">
+                              {uploadFor === o.order_id ? (
+                                <PaymentProofUpload
+                                  orderId={o.order_id}
+                                  orderCode={o.order_code}
+                                  customerCode={urlCode}
+                                  defaultAmount={o.balance_idr}
+                                  onUploaded={() => lookup(urlCode)}
+                                />
+                              ) : (
+                                <button
+                                  type="button"
+                                  onClick={() => setUploadFor(o.order_id)}
+                                  className="btn btn-secondary press px-4 py-2 text-sm"
+                                >
+                                  Upload bukti pembayaran
+                                </button>
+                              )}
+                            </div>
+                          )}
+                        </td>
+                      </tr>
+                    )}
+                  </Fragment>
+                );
+              })}
+            </tbody>
+          </table>
+        </div>
+      )}
+
+      {/* Urutan enam status itu tidak terbaca dari chip satuan — sekali di bawah tabel. */}
+      {orders && orders.some((o) => o.order_status !== "cancelled") && (
+        <details className="mt-3 text-sm">
+          <summary className="cursor-pointer text-ink-muted">Arti status pengiriman</summary>
+          <div className="mt-2 rounded-md border-[1.5px] border-ink bg-surface-sunken p-3 text-xs">
+            <p className="font-semibold text-ink">Dari luar negeri ke admin</p>
+            <p className="mt-0.5 text-ink-muted">
+              Ordered ke Publisher, lalu Menuju Indonesia, lalu Tiba di Admin. Ordered ke Publisher berarti
+              bukumu dipesan dan belum jalan dari penjual di sana.
+            </p>
+            <p className="mt-2 font-semibold text-ink">Dari admin ke kamu</p>
+            <p className="mt-0.5 text-ink-muted">
+              Sedang Dikemas, lalu Dikirim ke Kamu, lalu Diterima. Nomor resi muncul begitu paketmu
+              diserahkan ke kurir.
+            </p>
+          </div>
+        </details>
+      )}
 
       {/* Ajakan Form Kirim hanya saat ada buku yang benar-benar menunggu dikirim. */}
       {orders?.some(
