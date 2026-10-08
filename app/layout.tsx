@@ -14,7 +14,7 @@ const jakarta = Plus_Jakarta_Sans({
 });
 
 export const metadata: Metadata = {
-  title: "Pejastip Handal",
+  title: "Horangshuji Books", // situs statis: ganti di sini kalau nama toko berubah
   description: "Titip beli buku impor. Order per batch, tracker berbasis kode.",
 };
 

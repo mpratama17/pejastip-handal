@@ -130,7 +130,12 @@ function ShippingForm() {
             ))}
           </ul>
         </div>
-        <p className="mt-5 text-sm text-ink-muted">
+        <p className="mt-5 rounded-lg border-2 border-ink bg-sky-soft p-4 text-base font-semibold">
+          {viaShopee
+            ? "Pengiriman diproses sesuai antrean customer yang sudah checkout Shopee. Segera checkout supaya masuk antrean."
+            : "Pengiriman diproses sesuai antrean Form Kirim yang masuk."}
+        </p>
+        <p className="mt-4 text-base text-ink-muted">
           {viaShopee ? (
             <>
               Langkah berikutnya: checkout produk nominal di Shopee

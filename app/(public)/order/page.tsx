@@ -530,7 +530,9 @@ function OrderSuccess({ result }: { result: OrderResult }) {
         <DaisySticker className="absolute -bottom-6 -right-6 w-16" />
         {code ? (
           <>
-            <p className="text-sm text-ink/75">Order {result.order_code} tercatat. Kode pelacakanmu:</p>
+            <p className="text-base font-semibold text-ink/80">
+              Order <span className="font-bold text-ink">{result.order_code}</span> tercatat. Kode pelacakanmu:
+            </p>
             <button
               type="button"
               onClick={() => copy(code)}
@@ -538,14 +540,14 @@ function OrderSuccess({ result }: { result: OrderResult }) {
             >
               {code}
             </button>
-            <p className="mt-1 text-xs text-ink/75">{copied === code ? "Tersalin" : "Ketuk untuk menyalin · simpan kode ini"}</p>
+            <p className="mt-1 text-base font-semibold text-ink/80">{copied === code ? "Tersalin" : "Ketuk untuk menyalin · simpan kode ini"}</p>
           </>
         ) : (
           // Nomor WA sudah terdaftar: kode lama tidak ditampilkan ke siapa pun
           // yang sekadar tahu nomornya (kode = kunci Lacak Order & Form Kirim).
           <>
             <p className="font-display text-3xl font-semibold">Order {result.order_code} tercatat</p>
-            <p className="mx-auto mt-2 max-w-md text-sm text-ink/75">
+            <p className="mx-auto mt-2 max-w-md text-base text-ink/80">
               Nomor WhatsApp ini sudah terdaftar. Order baru masuk ke kode pelacakan yang sudah kamu punya, jadi pakai kode itu
               di Lacak Order untuk upload bukti transfer. Lupa kode? Chat admin.
             </p>
