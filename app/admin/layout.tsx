@@ -8,16 +8,35 @@ import { useAdminSession } from "@/lib/admin/use-admin-session";
 import { ConfirmProvider } from "@/components/admin/confirm-dialog";
 import { useSiteSettings } from "@/lib/site-settings";
 
-const NAV = [
-  { href: "/admin", label: "Dashboard" },
-  { href: "/admin/events", label: "Event" },
-  { href: "/admin/books", label: "Katalog" },
-  { href: "/admin/orders", label: "Order" },
-  { href: "/admin/payments", label: "Pembayaran" },
-  { href: "/admin/shipments", label: "Pengiriman" },
-  { href: "/admin/customers", label: "Customer" },
-  { href: "/admin/requests", label: "Request Buku" },
-  { href: "/admin/settings", label: "Pengaturan" },
+type Counts = { orders: number; payments: number; shipments: number };
+
+// Dikelompokkan per kebutuhan: yang dibuka tiap hari di atas. `badge` = antrean
+// yang menunggu admin (dihitung ulang tiap pindah halaman).
+const NAV_GROUPS: { title: string; items: { href: string; label: string; badge?: keyof Counts }[] }[] = [
+  {
+    title: "Harian",
+    items: [
+      { href: "/admin", label: "Dashboard" },
+      { href: "/admin/orders", label: "Order", badge: "orders" },
+      { href: "/admin/payments", label: "Pembayaran", badge: "payments" },
+      { href: "/admin/shipments", label: "Pengiriman", badge: "shipments" },
+    ],
+  },
+  {
+    title: "Katalog",
+    items: [
+      { href: "/admin/events", label: "Event" },
+      { href: "/admin/books", label: "Katalog" },
+      { href: "/admin/requests", label: "Request Buku" },
+    ],
+  },
+  {
+    title: "Data",
+    items: [
+      { href: "/admin/customers", label: "Customer" },
+      { href: "/admin/settings", label: "Pengaturan" },
+    ],
+  },
 ];
 
 // Menu aktif juga untuk sub-halaman (mis. /admin/orders/detail → Order).
@@ -42,6 +61,18 @@ export default function AdminLayout({ children }: { children: React.ReactNode })
       router.replace(oauthError ? `/admin/login?error=${encodeURIComponent(oauthError)}` : "/admin/login");
     }
   }, [session, isLoginPage, router]);
+
+  // Antrean untuk badge menu: order baru, bukti transfer menunggu, kiriman belum ada resi.
+  const [counts, setCounts] = useState<Counts | null>(null);
+  useEffect(() => {
+    if (!session || isLoginPage) return;
+    const head = { count: "exact" as const, head: true };
+    Promise.all([
+      supabase.from("orders").select("id", head).eq("status", "pending"),
+      supabase.from("payments").select("id", head).eq("status", "pending"),
+      supabase.from("shipments").select("id", head).is("tracking_number", null),
+    ]).then(([o, p, sh]) => setCounts({ orders: o.count ?? 0, payments: p.count ?? 0, shipments: sh.count ?? 0 }));
+  }, [session, isLoginPage, pathname]);
 
   // Drawer HP menutup sendiri setelah pindah halaman.
   useEffect(() => setMenuOpen(false), [pathname]);
@@ -84,26 +115,54 @@ export default function AdminLayout({ children }: { children: React.ReactNode })
           } w-64 shrink-0 flex-col overflow-y-auto border-r border-ink bg-surface px-4 py-6 md:sticky md:top-0 md:flex md:h-screen md:w-56`}
         >
           <p className="font-display text-lg font-extrabold tracking-tight text-ink">{storeName}</p>
-          <nav className="mt-6 flex flex-col gap-1">
-            {NAV.map((item) => (
-              <Link
-                key={item.href}
-                href={item.href}
-                aria-current={isActive(pathname, item.href) ? "page" : undefined}
-                className={`rounded-full px-3 py-2 text-sm font-semibold ${
-                  isActive(pathname, item.href) ? "border border-ink bg-primary text-ink" : "border border-transparent text-ink-muted hover:bg-surface-sunken"
-                }`}
-              >
-                {item.label}
-              </Link>
+          <nav className="mt-6 flex flex-col gap-5">
+            {NAV_GROUPS.map((group) => (
+              <div key={group.title}>
+                <p className="px-3 text-[11px] font-bold uppercase tracking-wider text-ink-faint">{group.title}</p>
+                <div className="mt-1 flex flex-col gap-1">
+                  {group.items.map((item) => {
+                    const active = isActive(pathname, item.href);
+                    const n = item.badge && counts ? counts[item.badge] : 0;
+                    return (
+                      <Link
+                        key={item.href}
+                        href={item.href}
+                        aria-current={active ? "page" : undefined}
+                        className={`flex items-center justify-between gap-2 rounded-full px-3 py-2 text-sm font-semibold ${
+                          active ? "border border-ink bg-primary text-ink" : "border border-transparent text-ink-muted hover:bg-surface-sunken"
+                        }`}
+                      >
+                        {item.label}
+                        {n > 0 && (
+                          <span
+                            aria-label={`${n} menunggu`}
+                            className="min-w-5 rounded-full bg-danger px-1.5 py-0.5 text-center text-[11px] font-bold leading-none text-white tabular-nums"
+                          >
+                            {n > 99 ? "99+" : n}
+                          </span>
+                        )}
+                      </Link>
+                    );
+                  })}
+                </div>
+              </div>
             ))}
           </nav>
-          <button
-            onClick={() => supabase.auth.signOut()}
-            className="mt-8 self-start text-sm text-ink-muted underline underline-offset-2 hover:text-ink"
-          >
-            Keluar
-          </button>
+
+          <div className="mt-auto flex flex-col gap-2 border-t-1 border-line pt-4 text-sm">
+            <a href="/" target="_blank" rel="noopener noreferrer" className="font-semibold text-link hover:underline">
+              Lihat toko ↗
+            </a>
+            <p className="truncate text-xs text-ink-muted" title={session.user.email ?? ""}>
+              {session.user.email}
+            </p>
+            <button
+              onClick={() => supabase.auth.signOut()}
+              className="btn btn-secondary press self-start px-3 py-1.5 text-sm"
+            >
+              Keluar
+            </button>
+          </div>
         </aside>
 
         <main className="min-w-0 flex-1 px-4 py-6 md:px-10 md:py-8">{children}</main>
