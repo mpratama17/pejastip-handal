@@ -6,6 +6,7 @@ import { useEffect, useState } from "react";
 import { supabase } from "@/lib/supabase/client";
 import { useAdminSession } from "@/lib/admin/use-admin-session";
 import { ConfirmProvider } from "@/components/admin/confirm-dialog";
+import { useSiteSettings } from "@/lib/site-settings";
 
 const NAV = [
   { href: "/admin", label: "Dashboard" },
@@ -29,6 +30,8 @@ export default function AdminLayout({ children }: { children: React.ReactNode })
   const session = useAdminSession();
   const isLoginPage = pathname === "/admin/login";
   const [menuOpen, setMenuOpen] = useState(false);
+  // Nama dari Pengaturan, sama dengan header publik — bukan ditulis mati.
+  const storeName = useSiteSettings()?.store_name || "Admin";
 
   useEffect(() => {
     if (session === null && !isLoginPage) {
@@ -58,7 +61,7 @@ export default function AdminLayout({ children }: { children: React.ReactNode })
     <ConfirmProvider>
       <div className="admin-theme min-h-screen bg-bg md:flex">
         <header className="sticky top-0 z-20 flex items-center justify-between border-b border-ink bg-surface px-4 py-3 md:hidden">
-          <p className="font-display text-lg font-extrabold tracking-tight text-ink">Pejastip Handal</p>
+          <p className="font-display text-lg font-extrabold tracking-tight text-ink">{storeName}</p>
           <button
             type="button"
             aria-expanded={menuOpen}
@@ -80,7 +83,7 @@ export default function AdminLayout({ children }: { children: React.ReactNode })
             menuOpen ? "fixed inset-y-0 left-0 z-40 flex" : "hidden"
           } w-64 shrink-0 flex-col overflow-y-auto border-r border-ink bg-surface px-4 py-6 md:sticky md:top-0 md:flex md:h-screen md:w-56`}
         >
-          <p className="font-display text-lg font-extrabold tracking-tight text-ink">Pejastip Handal</p>
+          <p className="font-display text-lg font-extrabold tracking-tight text-ink">{storeName}</p>
           <nav className="mt-6 flex flex-col gap-1">
             {NAV.map((item) => (
               <Link

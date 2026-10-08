@@ -3,10 +3,12 @@
 import { useEffect, useState } from "react";
 import { supabase } from "@/lib/supabase/client";
 import { NOT_ADMIN_FLAG } from "@/lib/admin/use-admin-session";
+import { useSiteSettings } from "@/lib/site-settings";
 
 export default function AdminLoginPage() {
   const [error, setError] = useState<string | null>(null);
   const [googleLoading, setGoogleLoading] = useState(false);
+  const storeName = useSiteSettings()?.store_name || "Admin";
 
   useEffect(() => {
     const rejected = sessionStorage.getItem(NOT_ADMIN_FLAG);
@@ -45,7 +47,7 @@ export default function AdminLoginPage() {
   return (
     <div className="flex min-h-screen items-center justify-center bg-bg px-6">
       <div className="w-full max-w-sm rounded-lg border border-border bg-surface p-6">
-        <p className="font-display text-lg text-ink">Pejastip Handal</p>
+        <p className="font-display text-lg text-ink">{storeName}</p>
         <h1 className="mt-1 text-sm text-ink-muted">Masuk ke dashboard admin</h1>
 
         <button
